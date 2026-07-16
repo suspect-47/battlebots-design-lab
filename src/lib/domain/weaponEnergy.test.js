@@ -32,4 +32,24 @@ describe('weaponEnergy', () => {
   it('impulse is positive and grows with rpm', () => {
     expect(impactImpulse(bar, 2000)).toBeGreaterThan(impactImpulse(bar, 1000))
   })
+
+  it('box-shaped weapon: impactImpulse uses tip radius = x/2', () => {
+    const boxWeapon = {
+      shape: 'box',
+      params: { x: 0.6, y: 0.05, z: 0.1 },
+      material: 'ar500_steel',
+      mountPoint: { x: 0, y: 0, z: 0 },
+    }
+    expect(impactImpulse(boxWeapon, 2000)).toBeGreaterThan(0)
+  })
+
+  it('unknown shape throws error', () => {
+    const sphereWeapon = {
+      shape: 'sphere',
+      params: {},
+      material: 'ar500_steel',
+      mountPoint: { x: 0, y: 0, z: 0 },
+    }
+    expect(() => impactImpulse(sphereWeapon, 2000)).toThrow(/unknown shape/i)
+  })
 })
