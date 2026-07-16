@@ -6,6 +6,9 @@ const drive = { id: 'd1', role: 'drivetrain', shape: 'box', params: { x: 0.1, y:
 const weapon = { id: 'w1', role: 'weapon', shape: 'cylinder', params: { radius: 0.3, length: 0.1 }, material: 'ar500_steel', mountPoint: { x: 0.35, y: 0, z: 0 }, thickness: 0.02, exposedArea: 0.06, rpm: 2500 }
 const bot = { schemaVersion: 1, name: 'Test', drivetrain: '4wd', modules: [chassis, drive, weapon] }
 
+const tinyChassis = { ...chassis, params: { x: 0.2, y: 0.05, z: 0.15 } }
+const lightBot = { schemaVersion: 1, name: 'Light', drivetrain: '4wd', modules: [tinyChassis, drive] }
+
 describe('computeBot', () => {
   it('reports validity and total mass/weight', () => {
     const d = computeBot(bot)
@@ -43,5 +46,16 @@ describe('computeBot', () => {
     const d = computeBot(bad)
     expect(d.valid).toBe(false)
     expect(d.errors.join()).toMatch(/chassis/i)
+  })
+
+  it('returns overBudget false for under-budget bots', () => {
+    const d = computeBot(lightBot)
+    expect(d.overBudget).toBe(false)
+    expect(d.totalWeightLb).toBeLessThan(250)
+  })
+
+  it('returns null weapon when bot has no weapon module', () => {
+    const d = computeBot(lightBot)
+    expect(d.weapon).toBeNull()
   })
 })
