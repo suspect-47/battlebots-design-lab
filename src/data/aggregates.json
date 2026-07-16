@@ -1,0 +1,66 @@
+{
+  "vertical_spinner": {
+    "botCount": 26,
+    "totalWins": 344,
+    "totalLosses": 243,
+    "winRate": 0.586,
+    "koRate": 0.674,
+    "avgWinsPerBot": 13.23
+  },
+  "horizontal_spinner": {
+    "botCount": 13,
+    "totalWins": 162,
+    "totalLosses": 150,
+    "winRate": 0.519,
+    "koRate": 0.691,
+    "avgWinsPerBot": 12.46
+  },
+  "drum": {
+    "botCount": 3,
+    "totalWins": 61,
+    "totalLosses": 21,
+    "winRate": 0.744,
+    "koRate": 0.475,
+    "avgWinsPerBot": 20.33
+  },
+  "hammer": {
+    "botCount": 8,
+    "totalWins": 93,
+    "totalLosses": 86,
+    "winRate": 0.52,
+    "koRate": 0.355,
+    "avgWinsPerBot": 11.63
+  },
+  "flipper": {
+    "botCount": 3,
+    "totalWins": 45,
+    "totalLosses": 22,
+    "winRate": 0.672,
+    "koRate": 0.622,
+    "avgWinsPerBot": 15
+  },
+  "lifter": {
+    "botCount": 6,
+    "totalWins": 38,
+    "totalLosses": 53,
+    "winRate": 0.418,
+    "koRate": 0.395,
+    "avgWinsPerBot": 6.33
+  },
+  "crusher": {
+    "botCount": 1,
+    "totalWins": 1,
+    "totalLosses": 6,
+    "winRate": 0.143,
+    "koRate": 1,
+    "avgWinsPerBot": 1
+  },
+  "other": {
+    "botCount": 1,
+    "totalWins": 1,
+    "totalLosses": 5,
+    "winRate": 0.167,
+    "koRate": 1,
+    "avgWinsPerBot": 1
+  }
+}
