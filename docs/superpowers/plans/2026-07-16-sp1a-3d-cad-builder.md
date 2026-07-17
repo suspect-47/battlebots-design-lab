@@ -98,23 +98,23 @@ export function defaultBot() {
     modules: [
       {
         id: 'chassis', role: 'chassis', shape: 'box',
-        params: { x: 0.55, y: 0.12, z: 0.4 }, material: 'titanium',
+        params: { x: 0.5, y: 0.05, z: 0.35 }, material: 'titanium',
         mountPoint: { x: 0, y: 0, z: 0 }, thickness: 0.006, exposedArea: 0.28,
       },
       {
         id: 'drive', role: 'drivetrain', shape: 'box',
-        params: { x: 0.5, y: 0.08, z: 0.12 }, material: 'aluminum',
-        mountPoint: { x: 0, y: -0.09, z: 0 }, thickness: 0.005, exposedArea: 0.1,
+        params: { x: 0.45, y: 0.06, z: 0.1 }, material: 'aluminum',
+        mountPoint: { x: 0, y: -0.06, z: 0 }, thickness: 0.005, exposedArea: 0.1,
       },
       {
         id: 'armor-front', role: 'armor', shape: 'box',
-        params: { x: 0.04, y: 0.12, z: 0.4 }, material: 'ar500_steel',
-        mountPoint: { x: -0.3, y: 0, z: 0 }, thickness: 0.01, exposedArea: 0.09,
+        params: { x: 0.03, y: 0.1, z: 0.35 }, material: 'ar500_steel',
+        mountPoint: { x: -0.27, y: 0, z: 0 }, thickness: 0.01, exposedArea: 0.09,
       },
       {
         id: 'weapon', role: 'weapon', shape: 'cylinder',
-        params: { radius: 0.16, length: 0.12 }, material: 'ar500_steel',
-        mountPoint: { x: 0.34, y: 0.02, z: 0 }, thickness: 0.02, exposedArea: 0.06,
+        params: { radius: 0.12, length: 0.1 }, material: 'ar500_steel',
+        mountPoint: { x: 0.32, y: 0.03, z: 0 }, thickness: 0.02, exposedArea: 0.06,
         rpm: 2400,
       },
     ],
