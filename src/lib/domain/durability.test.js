@@ -21,4 +21,10 @@ describe('durability', () => {
     expect(moduleHP({ material: 'titanium', thickness: 0.012, exposedArea: 0.05 }))
       .toBeCloseTo(2 * moduleHP({ material: 'titanium', thickness: 0.006, exposedArea: 0.05 }), 3)
   })
+
+  it('a 12mm AR500 armor plate has HP on the order of tens of kJ (pins HP_SCALE magnitude)', () => {
+    const hp = moduleHP({ material: 'ar500_steel', thickness: 0.012, exposedArea: 0.1 })
+    expect(hp).toBeGreaterThan(10000)   // would be ~86 J at the old 5e-5, ~86 kJ now
+    expect(hp).toBeLessThan(1_000_000)
+  })
 })
