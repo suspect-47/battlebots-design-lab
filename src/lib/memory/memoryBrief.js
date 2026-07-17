@@ -1,8 +1,9 @@
 import { sessionsVsClass } from './memoryStore.js'
 
 // A session is "tough" (drives hardening) when the society lost OR only barely
-// survived (< 60% HP left). Repeated close calls against a class progressively
-// thicken the next build's armor — learning across sessions, capped at +12mm.
+// survived (< NARROW_SURVIVAL HP left). Repeated close calls against a class
+// progressively thicken the next build's armor — learning across sessions,
+// capped at +12mm.
 const NARROW_SURVIVAL = 0.7
 const HARDEN_STEP_M = 0.003
 const HARDEN_CAP_M = 0.012

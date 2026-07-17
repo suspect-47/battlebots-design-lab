@@ -39,9 +39,13 @@ export default function App() {
   }
 
   function rememberDesign(result) {
-    const next = recordFromDesign(memory, result, Date.now())
-    setMemory(next)
-    saveMemory(next)
+    // functional updater so back-to-back records never drop a session on a stale closure
+    const t = Date.now()
+    setMemory((prev) => {
+      const next = recordFromDesign(prev, result, t)
+      saveMemory(next)
+      return next
+    })
   }
 
   return (
