@@ -15,11 +15,14 @@ export function proposeWeapon(ctx) {
 export function proposeArmor(ctx) {
   const armor = ctx.bot.modules.find((m) => m.role === 'armor')
   if (!armor) return null
+  const target = ARMOR_THICKNESS + (ctx.scout.experienceBonusM || 0)
   // satisfied only when both the material matches the scout counter AND the plate is thick enough
-  if (armor.material === ctx.scout.counterArmor && armor.thickness >= ARMOR_THICKNESS) return null
+  // use small epsilon for floating-point tolerance
+  if (armor.material === ctx.scout.counterArmor && armor.thickness >= target - 1e-10) return null
+  const memo = ctx.scout.memoryNote ? ` (memory: ${ctx.scout.memoryNote})` : ''
   return {
-    edit: { type: 'setArmor', material: ctx.scout.counterArmor, thickness: ARMOR_THICKNESS },
-    reasoning: `${ctx.scout.counterHint}: run ${ctx.scout.counterArmor} armor at ${ARMOR_THICKNESS * 1000}mm.`,
+    edit: { type: 'setArmor', material: ctx.scout.counterArmor, thickness: target },
+    reasoning: `${ctx.scout.counterHint}: run ${ctx.scout.counterArmor} armor at ${Math.round(target * 1000)}mm.${memo}`,
   }
 }
 
