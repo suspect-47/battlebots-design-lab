@@ -59,8 +59,10 @@ export default function App() {
       ) : (
         <main className="flex-1 relative min-h-0">
           <MatchHud status={matchStatus} playerName={bot.name} opponentName={profile?.name} />
-          <Arena playerBot={bot} opponentBot={makeOpponentBot(opponentRecord)}
-            opponentAggression={profile?.aggression ?? 0.6} onMatchEnd={setMatchStatus} />
+          <div className="absolute inset-0">
+            <Arena playerBot={bot} opponentBot={makeOpponentBot(opponentRecord)}
+              opponentAggression={profile?.aggression ?? 0.6} onMatchEnd={setMatchStatus} />
+          </div>
         </main>
       )}
     </div>

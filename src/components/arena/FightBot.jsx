@@ -4,11 +4,11 @@ import { useFrame } from '@react-three/fiber'
 import { botToColliders } from '../../lib/sim/botToColliders.js'
 import { botToMeshes } from '../../lib/scene/botToMeshes.js'
 import { opponentDrive } from '../../lib/sim/opponentDrive.js'
-import { MAX_LINVEL, MAX_ANGVEL } from '../../lib/sim/simConstants.js'
 
 // Auto-drive tuning (v1: no keyboard, both bots seek each other).
-const DRIVE_FORCE = 6
-const STEER_FORCE = 3
+// Velocity-based control (not impulse accumulation) — stable, bounded, no ejection.
+const DRIVE_SPEED = 1.6  // m/s horizontal seek speed at full throttle
+const TURN_RATE = 2.5    // rad/s yaw at full steer
 
 // One rigid body per bot (compound colliders). The weapon collider carries its
 // own onContactForce so only weapon-on-bot contact deals damage; the weapon
@@ -24,13 +24,8 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
   useFrame((_, dt) => {
     const body = bodyRef?.current
     if (!body) return
-    // clamp velocities to keep the solver stable
-    const lv = body.linvel(); const av = body.angvel()
-    const clampComp = (v, max) => Math.max(-max, Math.min(max, v))
-    body.setLinvel({ x: clampComp(lv.x, MAX_LINVEL), y: clampComp(lv.y, MAX_LINVEL), z: clampComp(lv.z, MAX_LINVEL) }, true)
-    body.setAngvel({ x: clampComp(av.x, MAX_ANGVEL), y: clampComp(av.y, MAX_ANGVEL), z: clampComp(av.z, MAX_ANGVEL) }, true)
 
-    // auto-drive: seek the opponent and ram
+    // auto-drive: seek the opponent by setting velocity directly (bounded, stable)
     const targetBody = targetBodyRef?.current
     if (targetBody) {
       const t = body.translation()
@@ -44,8 +39,10 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
         aggression,
       })
       const forward = [Math.cos(yaw), Math.sin(yaw)]
-      body.applyImpulse({ x: forward[0] * throttle * DRIVE_FORCE, y: 0, z: forward[1] * throttle * DRIVE_FORCE }, true)
-      body.applyTorqueImpulse({ x: 0, y: steer * STEER_FORCE, z: 0 }, true)
+      const lv = body.linvel()
+      // set horizontal velocity toward heading; preserve vertical (gravity)
+      body.setLinvel({ x: forward[0] * throttle * DRIVE_SPEED, y: lv.y, z: forward[1] * throttle * DRIVE_SPEED }, true)
+      body.setAngvel({ x: 0, y: steer * TURN_RATE, z: 0 }, true)
     }
 
     // weapon visual spin (spectacle only - damage comes from contact)
@@ -60,21 +57,20 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
         const m = health?.[c.id]
         if (m?.detached) return null
         const isWeapon = c.id === weaponId
+        // Continuous contact damage vs the OPPONENT body only (identity-checked, so
+        // floor/wall contact never counts). onContactForce fires every frame while
+        // engaged, so a sustained weapon press grinds the target down.
+        const onContactForce = (event) => {
+          if (!targetBodyRef?.current || event.other?.rigidBody !== targetBodyRef.current) return
+          // small fixed per-frame hit quality while engaged (contact fires ~every
+          // frame; tuned so a clash grinds a module down over a few seconds, not
+          // instantly). Weapon grinds harder than a chassis ram. HIT_SPEED_REF=8.
+          const approachSpeed = isWeapon ? 1.0 : 0.4
+          onHit?.(c.id, approachSpeed)
+        }
         return c.shape === 'cuboid'
-          ? <CuboidCollider key={c.id} args={c.args} position={c.position} />
-          : (
-            <CylinderCollider
-              key={c.id}
-              args={c.args}
-              position={c.position}
-              onContactForce={isWeapon
-                ? (event) => {
-                    const approachSpeed = (event.totalForceMagnitude || 0) / 400
-                    onHit?.(weaponId, approachSpeed)
-                  }
-                : undefined}
-            />
-          )
+          ? <CuboidCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
+          : <CylinderCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
       })}
       {meshes.map((mesh) => {
         if (health?.[mesh.id]?.detached) return null
