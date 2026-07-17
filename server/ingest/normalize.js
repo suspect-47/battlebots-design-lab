@@ -10,12 +10,25 @@ const RULES = [
   [/wedge|control|push|plow/i, 'control'],
 ]
 
-export function normalizeBotRecord(raw) {
+// The 8 canonical weapon classes. A curated `weapon` field matching one of
+// these is trusted directly; anything else falls back to keyword-guessing
+// from weaponRaw.
+const CANONICAL_WEAPON_CLASSES = new Set([
+  'vertical_spinner', 'horizontal_spinner', 'drum', 'hammer',
+  'flipper', 'crusher', 'lifter', 'control',
+])
+
+function classifyWeapon(raw) {
+  if (CANONICAL_WEAPON_CLASSES.has(raw.weapon)) return raw.weapon
   const text = raw.weaponRaw || ''
   const match = RULES.find(([re]) => re.test(text))
+  return match ? match[1] : 'control'
+}
+
+export function normalizeBotRecord(raw) {
   return {
     name: raw.name,
-    weaponClass: match ? match[1] : 'control',
+    weaponClass: classifyWeapon(raw),
     weightLb: raw.weight ?? null,
     wins: raw.wins ?? 0,
     losses: raw.losses ?? 0,

@@ -36,4 +36,15 @@ describe('normalizeBotRecord', () => {
     expect(row.wins).toBe(0)
     expect(row.losses).toBe(0)
   })
+
+  it('prefers the curated weapon field over keyword-guessing', () => {
+    // weaponRaw text alone would keyword-guess vertical (undercutter), but curated says horizontal
+    const row = normalizeBotRecord({ name: 'Valkyrie', weapon: 'horizontal_spinner', weaponRaw: 'Undercutter spinner' })
+    expect(row.weaponClass).toBe('horizontal_spinner')
+  })
+
+  it('falls back to keyword classification when curated weapon is absent or non-canonical', () => {
+    expect(normalizeBotRecord({ name: 'X', weaponRaw: 'Vertical bar spinner' }).weaponClass).toBe('vertical_spinner')
+    expect(normalizeBotRecord({ name: 'Y', weapon: 'bogus_key', weaponRaw: 'Drum' }).weaponClass).toBe('drum')
+  })
 })
