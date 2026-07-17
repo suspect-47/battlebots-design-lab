@@ -1,7 +1,8 @@
 import { applyEdit } from './edits.js'
 import { computeBot } from '../../src/lib/domain/computeBot.js'
 
-const VERTICAL_SPINNER = { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.14, length: 0.1 }, material: 'ar500_steel', rpm: 2600 }
+const VERTICAL_SPINNER = { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.15, length: 0.12 }, material: 'ar500_steel', rpm: 2800 }
+const ARMOR_THICKNESS = 0.012 // negotiated plates run thicker than a naive soft build
 
 export function proposeWeapon(ctx) {
   const weapon = ctx.bot.modules.find((m) => m.role === 'weapon')
@@ -13,10 +14,12 @@ export function proposeWeapon(ctx) {
 
 export function proposeArmor(ctx) {
   const armor = ctx.bot.modules.find((m) => m.role === 'armor')
-  if (!armor || armor.material === ctx.scout.counterArmor) return null
+  if (!armor) return null
+  // satisfied only when both the material matches the scout counter AND the plate is thick enough
+  if (armor.material === ctx.scout.counterArmor && armor.thickness >= ARMOR_THICKNESS) return null
   return {
-    edit: { type: 'setArmor', material: ctx.scout.counterArmor },
-    reasoning: `${ctx.scout.counterHint}: run ${ctx.scout.counterArmor} armor.`,
+    edit: { type: 'setArmor', material: ctx.scout.counterArmor, thickness: ARMOR_THICKNESS },
+    reasoning: `${ctx.scout.counterHint}: run ${ctx.scout.counterArmor} armor at ${ARMOR_THICKNESS * 1000}mm.`,
   }
 }
 

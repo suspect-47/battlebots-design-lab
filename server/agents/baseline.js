@@ -1,17 +1,17 @@
 import { applyEdit } from './edits.js'
 import { chiefArbitrate } from './specialists.js'
 import { simulateHeadlessMatch, opponentBotFromRecord } from './headlessMatch.js'
-import { defaultBot } from '../../src/lib/scene/defaultBot.js'
+import { neutralSeed } from './seeds.js'
 
-// One agent, one shot: maximal weapon + armor, no discipline trade-offs. Chief
-// only makes it legal (single trim), so it tends to be unbalanced/over-committed.
+// One agent, one shot: from the naive seed, bolt on a big spinner and stop —
+// ignores the scout entirely, so it keeps the seed's soft UHMW armor and 2WD.
+// Chief only makes it legal (trims the over-weight chassis). Unbalanced vs the
+// opponent's weapon class — the weaker build the society is measured against.
 export function singleAgentBuild(scout) {
-  let bot = defaultBot()
-  bot = applyEdit(bot, { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.2, length: 0.16 }, material: 'ar500_steel', rpm: 3000 })
-  bot = applyEdit(bot, { type: 'setArmor', material: 'ar500_steel', thickness: 0.02 })
-  // make it merely legal
+  let bot = neutralSeed()
+  bot = applyEdit(bot, { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.15, length: 0.12 }, material: 'ar500_steel', rpm: 2800 })
   const r = chiefArbitrate(bot, { type: 'scaleChassis', factor: 1 })
-  return r.accepted ? r.bot : defaultBot()
+  return r.accepted ? r.bot : bot
 }
 
 export function compareBuilds(societyBot, baselineBot, opponentRecord) {

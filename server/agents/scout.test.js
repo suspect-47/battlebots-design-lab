@@ -10,9 +10,9 @@ describe('scoutOpponent', () => {
     expect(typeof s.counterHint).toBe('string')
   })
 
-  it('recommends UHMW against a control bot', () => {
+  it('recommends tough titanium against a control bot', () => {
     const s = scoutOpponent({ name: 'Wedge', weapon: 'control', wins: 10, losses: 10, koWins: 1 })
-    expect(s.counterArmor).toBe('uhmw')
+    expect(s.counterArmor).toBe('titanium')
     expect(s.threat).toBe('medium')
   })
 

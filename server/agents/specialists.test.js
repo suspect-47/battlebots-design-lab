@@ -17,8 +17,8 @@ describe('specialists', () => {
     expect(typeof p.reasoning).toBe('string')
   })
 
-  it('armor engineer is satisfied when armor already matches', () => {
-    const bot = applyEdit(defaultBot(), { type: 'setArmor', material: 'ar500_steel' })
+  it('armor engineer is satisfied when armor matches material AND is thick enough', () => {
+    const bot = applyEdit(defaultBot(), { type: 'setArmor', material: 'ar500_steel', thickness: 0.012 })
     expect(proposeArmor(ctx(bot))).toBeNull()
   })
 

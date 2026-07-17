@@ -16,7 +16,7 @@ describe('deterministicAgent', () => {
   })
 
   it('returns null when a role is satisfied', () => {
-    const bot = applyEdit(defaultBot(), { type: 'setArmor', material: 'ar500_steel' })
+    const bot = applyEdit(defaultBot(), { type: 'setArmor', material: 'ar500_steel', thickness: 0.012 })
     expect(deterministicAgent.propose('armor', ctx(bot))).toBeNull()
   })
 
