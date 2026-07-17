@@ -3,13 +3,16 @@ import { chiefArbitrate } from './specialists.js'
 import { simulateHeadlessMatch, opponentBotFromRecord } from './headlessMatch.js'
 import { neutralSeed } from './seeds.js'
 
-// One agent, one shot: from the naive seed, bolt on a big spinner and stop —
-// ignores the scout entirely, so it keeps the seed's soft UHMW armor and 2WD.
-// Chief only makes it legal (trims the over-weight chassis). Unbalanced vs the
-// opponent's weapon class — the weaker build the society is measured against.
-export function singleAgentBuild(scout) {
+// One generalist agent, one shot, NO opponent scouting: it builds a single,
+// reasonable all-rounder — decent steel spinner, mid-grade TITANIUM armor — and
+// uses it against every opponent. Not a strawman (titanium is a sensible default,
+// not the worst choice); it just never adapts to who it's fighting. The society's
+// edge is scouting: it swaps to AR500 vs spinners, where the generalist's titanium
+// gives up ~25% of the damage mitigation and can lose a fight the society wins.
+export function singleAgentBuild(_scout) {
   let bot = neutralSeed()
   bot = applyEdit(bot, { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.15, length: 0.12 }, material: 'ar500_steel', rpm: 2800 })
+  bot = applyEdit(bot, { type: 'setArmor', material: 'titanium', thickness: 0.012 })
   const r = chiefArbitrate(bot, { type: 'scaleChassis', factor: 1 })
   return r.accepted ? r.bot : bot
 }

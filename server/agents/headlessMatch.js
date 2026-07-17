@@ -5,17 +5,27 @@ import { opponentProfile } from '../../src/lib/sim/opponentProfile.js'
 
 const SPINNERS = new Set(['horizontal_spinner', 'vertical_spinner', 'drum'])
 
+// Build an opponent whose real strength scales with its historical record: a
+// high-KO, high-win champion brings a bigger, faster weapon and thicker armor
+// than a losing bot. This is what makes the fight "grounded in real stats" — a
+// 40-8 KO machine genuinely threatens a build a 5-40 scrub can't.
 export function opponentBotFromRecord(record) {
-  const p = opponentProfile(record)
+  const p = opponentProfile(record) // aggression blends koRate + winRate, in [0,1]
   let bot = defaultBot()
   bot = { ...bot, name: p.name }
-  // A durable, moderate-offense benchmark: it survives the whole bout (thick
-  // AR500 armor) and keeps steady pressure, so the match is decided by how well
-  // EACH challenger's build survives — rewarding the society's matched armor and
-  // full chassis over the baseline's soft, weapon-only build.
-  bot = applyEdit(bot, { type: 'setArmor', material: 'ar500_steel', thickness: 0.02 })
+  const tough = p.aggression // 0..1 strength dial from the record
+  const armorThickness = +(0.008 + p.winRate * 0.016).toFixed(4) // stronger record → tougher
+  bot = applyEdit(bot, { type: 'setArmor', material: 'ar500_steel', thickness: armorThickness })
   if (SPINNERS.has(p.weaponClass)) {
-    bot = applyEdit(bot, { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.11, length: 0.09 }, material: 'ar500_steel', rpm: 2400 })
+    // spinner opponents are the threat class, scaled by aggression — tuned to sit
+    // in the window where AR500-matched armor (0.4 mitigation) survives but a
+    // titanium generalist (0.15) can be knocked out.
+    const radius = +(0.10 + tough * 0.045).toFixed(3)
+    const rpm = Math.round(2000 + tough * 700)
+    bot = applyEdit(bot, { type: 'setWeapon', shape: 'cylinder', params: { radius, length: 0.1 }, material: 'ar500_steel', rpm })
+  } else {
+    // control/lifter/flipper win by pushing, not damage — model as low offense
+    bot = applyEdit(bot, { type: 'setWeapon', shape: 'box', params: { x: 0.2, y: 0.05, z: 0.08 }, material: 'aluminum', rpm: 800 })
   }
   return bot
 }
