@@ -10,6 +10,8 @@ import { editorReducer } from './lib/editor/editorReducer.js'
 import { defaultBot } from './lib/scene/defaultBot.js'
 import { hudModel } from './lib/scene/hudModel.js'
 import { opponentProfile } from './lib/sim/opponentProfile.js'
+import { loadMemory, saveMemory } from './lib/memory/memoryStorage.js'
+import { recordFromDesign } from './lib/memory/recordFromDesign.js'
 import roster from './data/bots.json'
 
 // v1 opponent: a valid default bot carrying the picked record's aggression.
@@ -24,6 +26,7 @@ export default function App() {
   const [mode, setMode] = useState('build')
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [matchStatus, setMatchStatus] = useState('fighting')
+  const [memory, setMemory] = useState(() => loadMemory())
   const { bot, selectedId } = state
 
   const opponentRecord = useMemo(() => roster.find((b) => b.name === opponentName) || roster[0], [opponentName])
@@ -33,6 +36,12 @@ export default function App() {
   function loadIntoLab(bot) {
     dispatch({ type: 'reset', bot })
     setMode('build')
+  }
+
+  function rememberDesign(result) {
+    const next = recordFromDesign(memory, result, Date.now())
+    setMemory(next)
+    saveMemory(next)
   }
 
   return (
@@ -79,7 +88,7 @@ export default function App() {
 
       {mode === 'design' && (
         <main className="flex-1 min-h-0">
-          <AgentDesignView onLoadIntoLab={loadIntoLab} />
+          <AgentDesignView memory={memory} onRemember={rememberDesign} onLoadIntoLab={loadIntoLab} />
         </main>
       )}
     </div>
