@@ -28,5 +28,5 @@ export async function runNegotiation({ seedBot, scout, agent, maxRounds = 4 }) {
     if (acceptedThisRound === 0) { converged = true; break }
   }
 
-  return { finalBot: bot, transcript, converged, rounds: round }
+  return { finalBot: bot, transcript, converged, rounds: Math.min(round, maxRounds) }
 }

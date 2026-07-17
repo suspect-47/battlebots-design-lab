@@ -32,4 +32,16 @@ describe('runNegotiation', () => {
     const r = await runNegotiation({ seedBot: defaultBot(), scout, agent: deterministicAgent, maxRounds: 3 })
     expect(r.transcript.every((b) => typeof b.accepted === 'boolean')).toBe(true)
   })
+
+  it('reports rounds correctly when it exhausts maxRounds without converging', async () => {
+    // an agent that always proposes an accepted edit -> never converges
+    const churnAgent = { propose: async (role) => role === 'drivetrain'
+      ? { edit: { type: 'setDrivetrain', drivetrain: '2wd' }, reasoning: 'flip' }
+      : (role === 'weapon'
+          ? { edit: { type: 'setDrivetrain', drivetrain: '4wd' }, reasoning: 'flop' }
+          : null) }
+    const r = await runNegotiation({ seedBot: defaultBot(), scout, agent: churnAgent, maxRounds: 2 })
+    expect(r.converged).toBe(false)
+    expect(r.rounds).toBe(2)
+  })
 })
