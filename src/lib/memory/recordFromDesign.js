@@ -11,6 +11,7 @@ export function recordFromDesign(memory, designResult, t) {
     armorThicknessMm: armor ? Math.round(armor.thickness * 1000) : 0,
     result: comparison.society.winner === 'a' ? 'win' : 'loss',
     hpMargin: comparison.gain.hpMargin,
+    hpFrac: comparison.society.hpFrac,
   }
   return recordSession(memory, entry)
 }
