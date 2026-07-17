@@ -9,14 +9,19 @@ import { computeBot } from '../../lib/domain/computeBot.js'
 
 const ARENA_HALF = 3 // meters
 
-export default function Arena({ playerBot, opponentBot, opponentAggression = 0.6, onMatchEnd }) {
+export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, opponentAggression = 0.6, onMatchEnd }) {
   const playerHealth = useRef(initHealth(playerBot))
   const oppHealth = useRef(initHealth(opponentBot))
   const [, force] = useState(0)
   const playerDmg = computeBot(playerBot).weapon?.damagePerHit || 0
   const oppDmg = computeBot(opponentBot).weapon?.damagePerHit || 0
+  const endedRef = useRef(false)
+
+  const playerRef = useRef(null)
+  const oppRef = useRef(null)
 
   const hit = useCallback((who, dmgPerHit, targetHealthRef) => (moduleId, approachSpeed) => {
+    if (endedRef.current) return
     // pick the opponent's most-exposed surviving module as the struck part (simple v1)
     const target = Object.values(targetHealthRef.current).find((m) => !m.detached)
     if (!target) return
@@ -25,6 +30,7 @@ export default function Arena({ playerBot, opponentBot, opponentAggression = 0.6
     targetHealthRef.current = applyDamage(targetHealthRef.current, id, r.damage)
     force((n) => n + 1)
     if (isImmobilized(targetHealthRef.current)) {
+      endedRef.current = true
       onMatchEnd?.(who === 'player' ? 'player_win' : 'opponent_win')
     }
   }, [onMatchEnd])
@@ -46,9 +52,11 @@ export default function Arena({ playerBot, opponentBot, opponentAggression = 0.6
         </RigidBody>
 
         <FightBot bot={playerBot} health={playerHealth.current} position={[-1.2, 0.4, 0]}
-          bodyRef={useRef(null)} onHit={hit('player', playerDmg, oppHealth)} />
+          bodyRef={playerRef} targetBodyRef={oppRef} aggression={playerAggression}
+          onHit={hit('player', playerDmg, oppHealth)} />
         <FightBot bot={opponentBot} health={oppHealth.current} position={[1.2, 0.4, 0]}
-          bodyRef={useRef(null)} onHit={hit('opponent', oppDmg, playerHealth)} />
+          bodyRef={oppRef} targetBodyRef={playerRef} aggression={opponentAggression}
+          onHit={hit('opponent', oppDmg, playerHealth)} />
       </Physics>
       <OrbitControls makeDefault />
     </Canvas>

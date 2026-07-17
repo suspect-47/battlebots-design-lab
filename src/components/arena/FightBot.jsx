@@ -1,15 +1,25 @@
 import { useRef } from 'react'
-import { RigidBody } from '@react-three/rapier'
+import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier'
 import { useFrame } from '@react-three/fiber'
 import { botToColliders } from '../../lib/sim/botToColliders.js'
 import { botToMeshes } from '../../lib/scene/botToMeshes.js'
+import { opponentDrive } from '../../lib/sim/opponentDrive.js'
 import { MAX_LINVEL, MAX_ANGVEL } from '../../lib/sim/simConstants.js'
 
-// One rigid body per bot; weapon spun kinematically. Detached modules are hidden.
-function FightBot({ bot, health, position = [0, 0.3, 0], driveRef, onHit, bodyRef }) {
+// Auto-drive tuning (v1: no keyboard, both bots seek each other).
+const DRIVE_FORCE = 6
+const STEER_FORCE = 3
+
+// One rigid body per bot (compound colliders). The weapon collider carries its
+// own onContactForce so only weapon-on-bot contact deals damage; the weapon
+// mesh spins visually (rpm-derived) but the collider itself does not rotate
+// independently (that would need a joint - out of scope for v1).
+function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggression = 0.6, onHit, bodyRef }) {
   const { colliders, weaponId } = botToColliders(bot)
   const meshes = botToMeshes(bot)
-  const spin = useRef(0)
+  const weaponModule = bot.modules.find((m) => m.role === 'weapon' && m.rpm > 0)
+  const spinRate = weaponModule ? (weaponModule.rpm * 2 * Math.PI) / 60 : 0
+  const weaponMeshRef = useRef(null)
 
   useFrame((_, dt) => {
     const body = bodyRef?.current
@@ -19,32 +29,57 @@ function FightBot({ bot, health, position = [0, 0.3, 0], driveRef, onHit, bodyRe
     const clampComp = (v, max) => Math.max(-max, Math.min(max, v))
     body.setLinvel({ x: clampComp(lv.x, MAX_LINVEL), y: clampComp(lv.y, MAX_LINVEL), z: clampComp(lv.z, MAX_LINVEL) }, true)
     body.setAngvel({ x: clampComp(av.x, MAX_ANGVEL), y: clampComp(av.y, MAX_ANGVEL), z: clampComp(av.z, MAX_ANGVEL) }, true)
-    // apply drive input (impulse toward heading) if provided
-    const d = driveRef?.current
-    if (d && d.throttle) {
-      body.applyImpulse({ x: d.forward[0] * d.throttle * 4, y: 0, z: d.forward[1] * d.throttle * 4 }, true)
-      body.applyTorqueImpulse({ x: 0, y: d.steer * 2, z: 0 }, true)
+
+    // auto-drive: seek the opponent and ram
+    const targetBody = targetBodyRef?.current
+    if (targetBody) {
+      const t = body.translation()
+      const q = body.rotation()
+      const yaw = Math.atan2(2 * (q.w * q.y + q.x * q.z), 1 - 2 * (q.y * q.y + q.z * q.z))
+      const tt = targetBody.translation()
+      const { throttle, steer } = opponentDrive({
+        selfPos: [t.x, t.z],
+        selfYaw: yaw,
+        targetPos: [tt.x, tt.z],
+        aggression,
+      })
+      const forward = [Math.cos(yaw), Math.sin(yaw)]
+      body.applyImpulse({ x: forward[0] * throttle * DRIVE_FORCE, y: 0, z: forward[1] * throttle * DRIVE_FORCE }, true)
+      body.applyTorqueImpulse({ x: 0, y: steer * STEER_FORCE, z: 0 }, true)
     }
-    spin.current += dt
+
+    // weapon visual spin (spectacle only - damage comes from contact)
+    if (weaponMeshRef.current && spinRate) {
+      weaponMeshRef.current.rotation.y += spinRate * dt
+    }
   })
 
   return (
-    <RigidBody ref={bodyRef} position={position} colliders={false} linearDamping={0.6} angularDamping={0.6}
-      onContactForce={(e) => {
-        const speed = e.totalForceMagnitude || 0
-        if (weaponId && onHit) onHit(weaponId, speed / 50) // scale force -> approach-speed proxy
-      }}>
+    <RigidBody ref={bodyRef} position={position} colliders={false} linearDamping={0.6} angularDamping={0.6}>
       {colliders.map((c) => {
         const m = health?.[c.id]
         if (m?.detached) return null
+        const isWeapon = c.id === weaponId
         return c.shape === 'cuboid'
-          ? <CuboidChild key={c.id} c={c} />
-          : <CylinderChild key={c.id} c={c} spinning={c.id === weaponId} spin={spin} />
+          ? <CuboidCollider key={c.id} args={c.args} position={c.position} />
+          : (
+            <CylinderCollider
+              key={c.id}
+              args={c.args}
+              position={c.position}
+              onContactForce={isWeapon
+                ? (event) => {
+                    const approachSpeed = (event.totalForceMagnitude || 0) / 400
+                    onHit?.(weaponId, approachSpeed)
+                  }
+                : undefined}
+            />
+          )
       })}
       {meshes.map((mesh) => {
         if (health?.[mesh.id]?.detached) return null
         return (
-          <mesh key={mesh.id} position={mesh.position}>
+          <mesh key={mesh.id} position={mesh.position} ref={mesh.id === weaponId ? weaponMeshRef : undefined}>
             {mesh.geometry === 'box' ? <boxGeometry args={mesh.args} /> : <cylinderGeometry args={mesh.args} />}
             <meshStandardMaterial color={mesh.color} metalness={0.6} roughness={0.4} />
           </mesh>
@@ -53,10 +88,5 @@ function FightBot({ bot, health, position = [0, 0.3, 0], driveRef, onHit, bodyRe
     </RigidBody>
   )
 }
-
-// Collider children need the rapier collider components; import lazily to keep the smoke test light.
-import { CuboidCollider, CylinderCollider } from '@react-three/rapier'
-function CuboidChild({ c }) { return <CuboidCollider args={c.args} position={c.position} /> }
-function CylinderChild({ c }) { return <CylinderCollider args={c.args} position={c.position} /> }
 
 export default FightBot
