@@ -1,7 +1,7 @@
 // Keyword rules -> canonical weapon class. Order matters: most specific first.
 const RULES = [
-  [/horizontal|bar spinner|shell|ring/i, 'horizontal_spinner'],
   [/vertical|disk|drisk|undercutter|egg[- ]?beater/i, 'vertical_spinner'],
+  [/horizontal|bar spinner|shell|ring/i, 'horizontal_spinner'],
   [/drum/i, 'drum'],
   [/hammer|axe/i, 'hammer'],
   [/flip|launch/i, 'flipper'],

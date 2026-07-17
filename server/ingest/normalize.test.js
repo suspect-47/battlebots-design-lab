@@ -18,6 +18,10 @@ describe('normalizeBotRecord', () => {
       .toBe('vertical_spinner')
   })
 
+  it('classifies "vertical bar spinner" as vertical, not horizontal', () => {
+    expect(normalizeBotRecord({ name: 'HUGE', weaponRaw: 'Vertical bar spinner' }).weaponClass).toBe('vertical_spinner')
+  })
+
   it('classifies flipper/control text', () => {
     expect(normalizeBotRecord({ name: 'B', weaponRaw: 'Pneumatic flipper' }).weaponClass).toBe('flipper')
     expect(normalizeBotRecord({ name: 'C', weaponRaw: 'Wedge' }).weaponClass).toBe('control')
