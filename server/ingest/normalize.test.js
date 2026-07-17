@@ -1,0 +1,35 @@
+import { describe, it, expect } from 'vitest'
+import { normalizeBotRecord } from './normalize.js'
+
+describe('normalizeBotRecord', () => {
+  it('maps raw scraped fields to db row shape', () => {
+    const row = normalizeBotRecord({
+      name: 'Tombstone', weaponRaw: 'Horizontal bar spinner',
+      weight: 250, wins: 40, losses: 15, koWins: 30, url: 'http://x',
+    })
+    expect(row).toMatchObject({
+      name: 'Tombstone', weaponClass: 'horizontal_spinner',
+      weightLb: 250, wins: 40, losses: 15, koWins: 30,
+    })
+  })
+
+  it('classifies vertical spinner text', () => {
+    expect(normalizeBotRecord({ name: 'A', weaponRaw: 'Vertical disk spinner' }).weaponClass)
+      .toBe('vertical_spinner')
+  })
+
+  it('classifies flipper/control text', () => {
+    expect(normalizeBotRecord({ name: 'B', weaponRaw: 'Pneumatic flipper' }).weaponClass).toBe('flipper')
+    expect(normalizeBotRecord({ name: 'C', weaponRaw: 'Wedge' }).weaponClass).toBe('control')
+  })
+
+  it('falls back to control for unrecognized weapons', () => {
+    expect(normalizeBotRecord({ name: 'D', weaponRaw: 'Mystery gadget' }).weaponClass).toBe('control')
+  })
+
+  it('defaults missing numeric fields to 0', () => {
+    const row = normalizeBotRecord({ name: 'E', weaponRaw: 'Drum' })
+    expect(row.wins).toBe(0)
+    expect(row.losses).toBe(0)
+  })
+})

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "scrape": "node scripts/scrape.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ingest": "node server/ingest/run.js"
   },
   "dependencies": {
     "react": "^18.3.1",
