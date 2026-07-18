@@ -6,6 +6,7 @@ import Arena from './components/arena/Arena.jsx'
 import MatchHud from './components/arena/MatchHud.jsx'
 import OpponentPicker from './components/arena/OpponentPicker.jsx'
 import AgentDesignView from './components/design/AgentDesignView.jsx'
+import AnalysisView from './components/analysis/AnalysisView.jsx'
 import { editorReducer } from './lib/editor/editorReducer.js'
 import { defaultBot } from './lib/scene/defaultBot.js'
 import { hudModel } from './lib/scene/hudModel.js'
@@ -57,6 +58,8 @@ export default function App() {
           <div className="ml-auto flex items-center gap-3">
             {mode === 'build' && (
               <>
+                <button onClick={() => setMode('analysis')}
+                  className="mono text-xs px-3 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">META ▶</button>
                 <button onClick={() => setMode('design')}
                   className="mono text-xs px-3 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">AGENTS ▶</button>
                 <OpponentPicker roster={roster} value={opponentName} onChange={setOpponentName} />
@@ -93,6 +96,12 @@ export default function App() {
       {mode === 'design' && (
         <main className="flex-1 min-h-0">
           <AgentDesignView memory={memory} onRemember={rememberDesign} onLoadIntoLab={loadIntoLab} />
+        </main>
+      )}
+
+      {mode === 'analysis' && (
+        <main className="flex-1 min-h-0">
+          <AnalysisView memory={memory} />
         </main>
       )}
     </div>
