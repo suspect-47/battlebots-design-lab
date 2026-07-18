@@ -1,8 +1,10 @@
 import Fastify from 'fastify'
 import { runDesign } from '../agents/designService.js'
 import { pickAgent, deterministicAgent } from '../agents/agent.js'
+import { pickVerdictAgent } from '../agents/verdictAgent.js'
+import { fightContext } from '../../src/lib/verdict/fightVerdict.js'
 
-export function buildApp({ pool, agent, roster } = {}) {
+export function buildApp({ pool, agent, roster, verdictAgent } = {}) {
   const app = Fastify({ logger: false })
 
   // Permissive CORS so the Vite frontend (different port) can call /design for
@@ -41,6 +43,15 @@ export function buildApp({ pool, agent, roster } = {}) {
     if (!record) return reply.code(400).send({ error: `unknown opponent: ${opponentName}` })
     const useAgent = agent || pickAgent(process.env) || deterministicAgent
     return runDesign({ opponentRecord: record, agent: useAgent, memory })
+  })
+
+  app.post('/verdict', async (request, reply) => {
+    const { playerBot, opponentRecord, winner } = request.body || {}
+    if (!playerBot || !opponentRecord || !winner) {
+      return reply.code(400).send({ error: 'playerBot, opponentRecord, and winner are required' })
+    }
+    const ctx = fightContext(playerBot, opponentRecord, winner)
+    return (verdictAgent || pickVerdictAgent(process.env)).verdict(ctx)
   })
 
   return app
