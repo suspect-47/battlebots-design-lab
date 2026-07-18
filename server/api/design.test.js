@@ -24,4 +24,24 @@ describe('POST /design', () => {
     expect(res.statusCode).toBe(400)
     await app.close()
   })
+
+  it('accepts a caller-supplied opponentRecord (no DB/roster needed) + memory', async () => {
+    const app = buildApp({ pool: fakePool, agent: deterministicAgent }) // no roster
+    const opponentRecord = { name: 'Custom', weapon: 'vertical_spinner', wins: 30, losses: 5, koWins: 20 }
+    const memory = { version: 1, sessions: [] }
+    const res = await app.inject({ method: 'POST', url: '/design', payload: { opponentName: 'Custom', opponentRecord, memory } })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.scout.weaponClass).toBe('vertical_spinner')
+    expect(body.brief).toBeDefined() // memory path engaged
+    await app.close()
+  })
+
+  it('answers CORS preflight (OPTIONS) with the allow-origin header', async () => {
+    const app = buildApp({ pool: fakePool, agent: deterministicAgent, roster })
+    const res = await app.inject({ method: 'OPTIONS', url: '/design' })
+    expect(res.statusCode).toBe(204)
+    expect(res.headers['access-control-allow-origin']).toBe('*')
+    await app.close()
+  })
 })
