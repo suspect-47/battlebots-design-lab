@@ -4,22 +4,24 @@ import ScoutPanel from './ScoutPanel.jsx'
 import MemoryPanel from './MemoryPanel.jsx'
 import ComparisonPanel from './ComparisonPanel.jsx'
 import TranscriptPanel from './TranscriptPanel.jsx'
-import { designVsOpponent } from '../../lib/design/agentDesign.js'
+import { designVsOpponent, designViaBackend } from '../../lib/design/agentDesign.js'
 import roster from '../../data/bots.json'
 
 export default function AgentDesignView({ memory, onRemember, onLoadIntoLab }) {
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [result, setResult] = useState(null)
   const [running, setRunning] = useState(false)
+  const [live, setLive] = useState(false)
 
   async function run() {
     const record = roster.find((b) => b.name === opponentName) || roster[0]
     setRunning(true)
     setResult(null)
     try {
-      // let the "negotiating" frame paint before the (fast) synchronous society runs
+      // let the "negotiating" frame paint before the society runs
       await new Promise((r) => setTimeout(r, 30))
-      const out = await designVsOpponent(record, memory)
+      // live → backend (real OpenAI when keyed, falls back to local); off → in-browser deterministic
+      const out = live ? await designViaBackend(record, memory) : await designVsOpponent(record, memory)
       setResult(out)
       onRemember?.(out)
     } finally {
@@ -37,9 +39,19 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab }) {
             className="mono w-full text-xs px-3 py-2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 disabled:opacity-40">
             {running ? 'NEGOTIATING…' : 'RUN AGENT SOCIETY ▶'}
           </button>
+          <label className="mono flex items-center gap-2 text-[11px] text-cyan-100/60 cursor-pointer">
+            <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+            <span>Live AI (OpenAI via backend)</span>
+          </label>
+          {result?.source === 'local-fallback' && (
+            <div className="mono text-[10px] text-amber-400/60">backend unreachable — ran deterministic locally</div>
+          )}
+          {result?.source === 'backend' && (
+            <div className="mono text-[10px] text-cyan-400/60">✓ ran via backend</div>
+          )}
         </div>
         {result && <ScoutPanel scout={result.scout} />}
-        {result && <MemoryPanel brief={result.brief} />}
+        {result && <MemoryPanel brief={result.brief} oppBrief={result.oppBrief} opponentName={result.scout.name} />}
         {result && <ComparisonPanel comparison={result.comparison} />}
         {result && (
           <div className="p-4 mt-auto">

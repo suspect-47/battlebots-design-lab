@@ -11,6 +11,12 @@ export function sessionsVsClass(memory, weaponClass) {
     .sort((a, b) => b.t - a.t)
 }
 
+export function sessionsVsOpponent(memory, opponentName) {
+  return memory.sessions
+    .filter((s) => s.opponentName === opponentName)
+    .sort((a, b) => b.t - a.t)
+}
+
 export function pruneMemory(memory) {
   // keep the newest MAX_PER_CLASS per class, then the newest MAX_TOTAL overall
   const byClass = new Map()

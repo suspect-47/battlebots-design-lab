@@ -3,8 +3,10 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
 import FightBot from './FightBot.jsx'
+import Debris from './Debris.jsx'
 import { initHealth, applyDamage, isImmobilized } from '../../lib/sim/healthState.js'
 import { resolveImpact } from '../../lib/sim/resolveImpact.js'
+import { fractureFragments } from '../../lib/sim/fracture.js'
 import { computeBot } from '../../lib/domain/computeBot.js'
 
 const ARENA_HALF = 3 // meters
@@ -28,6 +30,10 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
   const playerRef = useRef(null)
   const oppRef = useRef(null)
 
+  // Debris bursts from destroyed modules (voronoi-style fracture).
+  const [shatters, setShatters] = useState([])
+  const shatterId = useRef(0)
+
   // Judges' decision: if no KO by the time limit, the bot with more surviving
   // HP wins (real BattleBots go to a decision on timeout). Guarantees the match
   // always resolves even when bots wedge-lock without landing weapon strikes.
@@ -42,7 +48,7 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
     return () => clearTimeout(timer)
   }, [matchDurationMs, onMatchEnd])
 
-  const hit = useCallback((who, dmgPerHit, targetHealthRef) => (moduleId, approachSpeed) => {
+  const hit = useCallback((who, dmgPerHit, targetHealthRef, targetBodyRef, targetBot) => (moduleId, approachSpeed) => {
     if (endedRef.current) return
     // Rate-limit damage to ~12 hits/s per attacker so the fight is frame-rate
     // independent and lasts a watchable few seconds (contact fires ~60x/s).
@@ -57,12 +63,26 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
     const r = resolveImpact({ weaponDamagePerHit: dmgPerHit, targetHp: target.hp, approachSpeed })
     targetHealthRef.current = applyDamage(targetHealthRef.current, id, r.damage)
     force((n) => n + 1)
+    // Newly destroyed module → shatter it into debris at its world position.
+    if (r.detached) {
+      const module = targetBot.modules.find((m) => m.id === id)
+      const body = targetBodyRef?.current
+      if (module && body) {
+        const t = body.translation()
+        const mp = module.mountPoint
+        const position = [t.x + mp.x, t.y + mp.y, t.z + mp.z]
+        const key = shatterId.current++
+        setShatters((prev) => [...prev, { key, position, fragments: fractureFragments(module) }])
+      }
+    }
     // Win on full immobilization (KO) OR when the opponent is beaten below 35% total HP (damage TKO).
     if (isImmobilized(targetHealthRef.current) || hpFractionOf(targetHealthRef.current) < 0.35) {
       endedRef.current = true
       onMatchEnd?.(who === 'player' ? 'player_win' : 'opponent_win')
     }
   }, [onMatchEnd])
+
+  const removeShatter = useCallback((key) => setShatters((prev) => prev.filter((s) => s.key !== key)), [])
 
   return (
     <Canvas camera={{ position: [0, 4.5, 6.5], fov: 50 }} style={{ height: '100%', width: '100%' }}>
@@ -82,10 +102,14 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
 
         <FightBot bot={playerBot} health={playerHealth.current} position={[-1.2, 0.4, 0]}
           bodyRef={playerRef} targetBodyRef={oppRef} aggression={playerAggression}
-          onHit={hit('player', playerDmg, oppHealth)} />
+          onHit={hit('player', playerDmg, oppHealth, oppRef, opponentBot)} />
         <FightBot bot={opponentBot} health={oppHealth.current} position={[1.2, 0.4, 0]}
           bodyRef={oppRef} targetBodyRef={playerRef} aggression={opponentAggression}
-          onHit={hit('opponent', oppDmg, playerHealth)} />
+          onHit={hit('opponent', oppDmg, playerHealth, playerRef, playerBot)} />
+
+        {shatters.map((s) => (
+          <Debris key={s.key} position={s.position} fragments={s.fragments} onDone={() => removeShatter(s.key)} />
+        ))}
       </Physics>
       <OrbitControls makeDefault target={[0, 0.3, 0]} />
     </Canvas>
