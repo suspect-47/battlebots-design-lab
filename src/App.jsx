@@ -1,9 +1,10 @@
-import { useReducer, useState, useMemo } from 'react'
+import { useReducer, useState, useMemo, useEffect } from 'react'
 import BotScene from './components/lab/BotScene.jsx'
 import EditorPanel from './components/lab/EditorPanel.jsx'
 import HudPanel from './components/lab/HudPanel.jsx'
 import Arena from './components/arena/Arena.jsx'
 import MatchHud from './components/arena/MatchHud.jsx'
+import VerdictPanel from './components/arena/VerdictPanel.jsx'
 import OpponentPicker from './components/arena/OpponentPicker.jsx'
 import AgentDesignView from './components/design/AgentDesignView.jsx'
 import AnalysisView from './components/analysis/AnalysisView.jsx'
@@ -13,6 +14,7 @@ import { hudModel } from './lib/scene/hudModel.js'
 import { opponentProfile } from './lib/sim/opponentProfile.js'
 import { loadMemory, saveMemory } from './lib/memory/memoryStorage.js'
 import { recordFromDesign } from './lib/memory/recordFromDesign.js'
+import { getFightVerdict } from './lib/verdict/verdictBridge.js'
 import roster from './data/bots.json'
 
 // v1 opponent: a valid default bot carrying the picked record's aggression.
@@ -27,12 +29,24 @@ export default function App() {
   const [mode, setMode] = useState('build')
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [matchStatus, setMatchStatus] = useState('fighting')
+  const [verdict, setVerdict] = useState(null)
   const [memory, setMemory] = useState(() => loadMemory())
   const { bot, selectedId } = state
 
   const opponentRecord = useMemo(() => roster.find((b) => b.name === opponentName) || roster[0], [opponentName])
   const profile = useMemo(() => (opponentRecord ? opponentProfile(opponentRecord) : null), [opponentRecord])
   const cg = hudModel(bot).cg
+
+  // When a fight resolves, fetch an analyst verdict (backend OpenAI when running,
+  // deterministic offline otherwise) and show it over the arena.
+  useEffect(() => {
+    if (mode !== 'fight') { setVerdict(null); return }
+    if (matchStatus !== 'player_win' && matchStatus !== 'opponent_win') { setVerdict(null); return }
+    let live = true
+    const winner = matchStatus === 'player_win' ? 'player' : 'opponent'
+    getFightVerdict(bot, opponentRecord, winner).then((v) => { if (live) setVerdict(v) })
+    return () => { live = false }
+  }, [mode, matchStatus, bot, opponentRecord])
 
   function loadIntoLab(bot) {
     dispatch({ type: 'reset', bot })
@@ -90,6 +104,7 @@ export default function App() {
             <Arena playerBot={bot} opponentBot={makeOpponentBot(opponentRecord)}
               opponentAggression={profile?.aggression ?? 0.6} onMatchEnd={setMatchStatus} />
           </div>
+          <VerdictPanel verdict={verdict} playerName={bot.name} opponentName={profile?.name} />
         </main>
       )}
 
