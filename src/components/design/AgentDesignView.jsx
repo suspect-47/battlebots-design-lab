@@ -51,7 +51,7 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab }) {
           )}
         </div>
         {result && <ScoutPanel scout={result.scout} />}
-        {result && <MemoryPanel brief={result.brief} />}
+        {result && <MemoryPanel brief={result.brief} oppBrief={result.oppBrief} opponentName={result.scout.name} />}
         {result && <ComparisonPanel comparison={result.comparison} />}
         {result && (
           <div className="p-4 mt-auto">
