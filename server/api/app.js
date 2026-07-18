@@ -3,6 +3,7 @@ import { runDesign } from '../agents/designService.js'
 import { pickAgent, deterministicAgent } from '../agents/agent.js'
 import { pickVerdictAgent } from '../agents/verdictAgent.js'
 import { fightContext } from '../../src/lib/verdict/fightVerdict.js'
+import { aggregateByClass } from '../../src/lib/analysis/aggregate.js'
 
 export function buildApp({ pool, agent, roster, verdictAgent } = {}) {
   const app = Fastify({ logger: false })
@@ -23,9 +24,11 @@ export function buildApp({ pool, agent, roster, verdictAgent } = {}) {
     return rows
   })
 
+  // Live meta: compute per-class aggregates from the current bots table, so a
+  // fresh `npm run ingest` (Bright Data → Postgres) is reflected immediately.
   app.get('/meta', async () => {
-    const { rows } = await pool.query('SELECT * FROM weapon_meta ORDER BY weapon_class')
-    return rows
+    const { rows } = await pool.query('SELECT weapon_class AS weapon, wins, losses, ko_wins AS "koWins" FROM bots')
+    return aggregateByClass(rows)
   })
 
   app.post('/design', async (request, reply) => {

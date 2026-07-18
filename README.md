@@ -30,9 +30,18 @@ npm run dev                   # in another terminal
 
 In the **AGENTS** view, tick **"Live AI (OpenAI via backend)"**. The frontend then POSTs the design request to the backend, which runs the society with OpenAI (`gpt-4o-mini`). The key stays server-side and never reaches the browser. If the backend is unreachable or a specialist call fails, it falls back to the deterministic society — the UI never breaks.
 
-## Data spine (optional)
+## Live data refresh (optional)
 
-`aggregates.json` / `bots.json` ship committed, so the app works offline. To refresh from source, set `DATABASE_URL` + `BRIGHTDATA_API_TOKEN` and run `npm run ingest` (Bright Data → Postgres), then `npm run api`.
+`aggregates.json` / `bots.json` ship committed, so the **META** dashboard renders offline from a snapshot (it shows "DATA SOURCE: COMMITTED SNAPSHOT"). To refresh from source:
+
+```bash
+# set DATABASE_URL + BRIGHTDATA_API_TOKEN in .env
+npm run ingest       # Bright Data → Postgres bots table
+npm run api          # backend at http://localhost:3001
+npm run dev          # dashboard now shows "DATA SOURCE: LIVE"
+```
+
+`GET /meta` computes the per-class aggregates **live from the current bots table** (no precomputed table), so a fresh ingest is reflected immediately. The frontend prefers the backend's live meta + roster and falls back to the committed snapshot if the backend is unreachable — the dashboard never breaks.
 
 ## Test / build
 
