@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import OpponentPicker from '../arena/OpponentPicker.jsx'
 import ScoutPanel from './ScoutPanel.jsx'
+import MemoryPanel from './MemoryPanel.jsx'
 import ComparisonPanel from './ComparisonPanel.jsx'
 import TranscriptPanel from './TranscriptPanel.jsx'
 import { designVsOpponent } from '../../lib/design/agentDesign.js'
 import roster from '../../data/bots.json'
 
-export default function AgentDesignView({ onLoadIntoLab }) {
+export default function AgentDesignView({ memory, onRemember, onLoadIntoLab }) {
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [result, setResult] = useState(null)
   const [running, setRunning] = useState(false)
@@ -18,8 +19,9 @@ export default function AgentDesignView({ onLoadIntoLab }) {
     try {
       // let the "negotiating" frame paint before the (fast) synchronous society runs
       await new Promise((r) => setTimeout(r, 30))
-      const out = await designVsOpponent(record)
+      const out = await designVsOpponent(record, memory)
       setResult(out)
+      onRemember?.(out)
     } finally {
       setRunning(false)
     }
@@ -37,6 +39,7 @@ export default function AgentDesignView({ onLoadIntoLab }) {
           </button>
         </div>
         {result && <ScoutPanel scout={result.scout} />}
+        {result && <MemoryPanel brief={result.brief} />}
         {result && <ComparisonPanel comparison={result.comparison} />}
         {result && (
           <div className="p-4 mt-auto">
