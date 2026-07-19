@@ -4,12 +4,13 @@ import { OrbitControls, Grid } from '@react-three/drei'
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
 import FightBot from './FightBot.jsx'
 import Debris from './Debris.jsx'
+import { useKeys } from './useKeys.js'
 import { initHealth, applyDamage, isImmobilized } from '../../lib/sim/healthState.js'
 import { resolveImpact } from '../../lib/sim/resolveImpact.js'
 import { fractureFragments } from '../../lib/sim/fracture.js'
 import { computeBot } from '../../lib/domain/computeBot.js'
 
-const ARENA_HALF = 3 // meters
+const ARENA_HALF = 2.2 // meters — bounded box keeps the clash centred
 
 const hpFractionOf = (health) => {
   const mods = Object.values(health)
@@ -18,7 +19,8 @@ const hpFractionOf = (health) => {
   return max ? cur / max : 0
 }
 
-export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, opponentAggression = 0.6, matchDurationMs = 12000, onMatchEnd }) {
+export default function Arena({ playerBot, opponentBot, manual = false, running = true, playerAggression = 0.9, opponentAggression = 0.6, matchDurationMs = 12000, onMatchEnd, onStats }) {
+  const keys = useKeys()
   const playerHealth = useRef(initHealth(playerBot))
   const oppHealth = useRef(initHealth(opponentBot))
   const [, force] = useState(0)
@@ -34,10 +36,17 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
   const [shatters, setShatters] = useState([])
   const shatterId = useRef(0)
 
+  // Report live HP fractions up to the overlay (bars). Fire once at full health.
+  const reportStats = useCallback(() => {
+    onStats?.({ player: hpFractionOf(playerHealth.current), opponent: hpFractionOf(oppHealth.current) })
+  }, [onStats])
+  useEffect(() => { reportStats() }, [reportStats])
+
   // Judges' decision: if no KO by the time limit, the bot with more surviving
   // HP wins (real BattleBots go to a decision on timeout). Guarantees the match
   // always resolves even when bots wedge-lock without landing weapon strikes.
   useEffect(() => {
+    if (!running) return
     const timer = setTimeout(() => {
       if (endedRef.current) return
       endedRef.current = true
@@ -46,7 +55,7 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
       onMatchEnd?.(pf >= of ? 'player_win' : 'opponent_win')
     }, matchDurationMs)
     return () => clearTimeout(timer)
-  }, [matchDurationMs, onMatchEnd])
+  }, [running, matchDurationMs, onMatchEnd])
 
   const hit = useCallback((who, dmgPerHit, targetHealthRef, targetBodyRef, targetBot) => (moduleId, approachSpeed) => {
     if (endedRef.current) return
@@ -63,6 +72,24 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
     const r = resolveImpact({ weaponDamagePerHit: dmgPerHit, targetHp: target.hp, approachSpeed })
     targetHealthRef.current = applyDamage(targetHealthRef.current, id, r.damage)
     force((n) => n + 1)
+    reportStats()
+
+    // clash knockback: fling the target away from the attacker (weapon hits fling
+    // harder) with a little pop — so hits read as real impacts, not a merge.
+    const atk = (who === 'player' ? playerRef : oppRef).current
+    const tgt = targetBodyRef?.current
+    if (atk && tgt) {
+      const a = atk.translation()
+      const b = tgt.translation()
+      let dx = b.x - a.x, dz = b.z - a.z
+      const d = Math.hypot(dx, dz) || 1
+      dx /= d; dz /= d
+      // horizontal-only nudge apart (no vertical pop → they can't launch over the
+      // walls) so hits read as clashes but both bots stay in the arena.
+      const mag = 6 + approachSpeed * 11
+      tgt.applyImpulse({ x: dx * mag, y: 0, z: dz * mag }, true)
+      atk.applyImpulse({ x: -dx * mag * 0.25, y: 0, z: -dz * mag * 0.25 }, true)
+    }
     // Newly destroyed module → shatter it into debris at its world position.
     if (r.detached) {
       const module = targetBot.modules.find((m) => m.id === id)
@@ -85,33 +112,50 @@ export default function Arena({ playerBot, opponentBot, playerAggression = 0.9, 
   const removeShatter = useCallback((key) => setShatters((prev) => prev.filter((s) => s.key !== key)), [])
 
   return (
-    <Canvas camera={{ position: [0, 4.5, 6.5], fov: 50 }} style={{ height: '100%', width: '100%' }}>
-      <color attach="background" args={['#05070a']} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[4, 6, 3]} intensity={1.3} />
-      <Grid args={[ARENA_HALF * 2, ARENA_HALF * 2]} cellColor="#1b2733" sectionColor="#22d3ee" position={[0, 0.01, 0]} />
+    <Canvas camera={{ position: [0, 5.2, 6.4], fov: 48 }} style={{ height: '100%', width: '100%' }}>
+      <color attach="background" args={['#080a10']} />
+      <ambientLight intensity={0.9} />
+      <hemisphereLight args={['#9fb4c4', '#0a0a12', 0.6]} />
+      <directionalLight position={[3, 8, 4]} intensity={1.6} />
+      <pointLight position={[-3, 3, 1]} intensity={4} distance={12} color="#1fe3e8" />
+      <pointLight position={[3, 3, 1]} intensity={4} distance={12} color="#ff2e6e" />
+
+      {/* bounded arena: solid floor, grid, and a glowing rim wall on all 4 sides */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[ARENA_HALF * 2, ARENA_HALF * 2]} />
+        <meshStandardMaterial color="#0d1119" metalness={0.4} roughness={0.8} />
+      </mesh>
+      <Grid args={[ARENA_HALF * 2, ARENA_HALF * 2]} cellColor="#1b2733" sectionColor="#31586a" position={[0, 0.02, 0]} fadeDistance={30} fadeStrength={1} />
+      {[[0, ARENA_HALF], [0, -ARENA_HALF], [ARENA_HALF, 0], [-ARENA_HALF, 0]].map(([x, z], i) => (
+        <mesh key={i} position={[x, 0.14, z]}>
+          <boxGeometry args={x === 0 ? [ARENA_HALF * 2, 0.28, 0.08] : [0.08, 0.28, ARENA_HALF * 2]} />
+          <meshStandardMaterial color="#12202a" emissive="#2a4a55" emissiveIntensity={0.5} metalness={0.6} roughness={0.5} />
+        </mesh>
+      ))}
+
       <Physics gravity={[0, -9.81, 0]}>
-        {/* floor + 4 walls (tall enough to contain rammed bots) */}
         <RigidBody type="fixed">
           <CuboidCollider args={[ARENA_HALF, 0.1, ARENA_HALF]} position={[0, -0.1, 0]} />
-          <CuboidCollider args={[0.15, 1.2, ARENA_HALF]} position={[-ARENA_HALF, 1.2, 0]} />
-          <CuboidCollider args={[0.15, 1.2, ARENA_HALF]} position={[ARENA_HALF, 1.2, 0]} />
-          <CuboidCollider args={[ARENA_HALF, 1.2, 0.15]} position={[0, 1.2, -ARENA_HALF]} />
-          <CuboidCollider args={[ARENA_HALF, 1.2, 0.15]} position={[0, 1.2, ARENA_HALF]} />
+          <CuboidCollider args={[0.12, 1.2, ARENA_HALF]} position={[-ARENA_HALF, 1.2, 0]} />
+          <CuboidCollider args={[0.12, 1.2, ARENA_HALF]} position={[ARENA_HALF, 1.2, 0]} />
+          <CuboidCollider args={[ARENA_HALF, 1.2, 0.12]} position={[0, 1.2, -ARENA_HALF]} />
+          <CuboidCollider args={[ARENA_HALF, 1.2, 0.12]} position={[0, 1.2, ARENA_HALF]} />
         </RigidBody>
 
-        <FightBot bot={playerBot} health={playerHealth.current} position={[-1.2, 0.4, 0]}
+        <FightBot bot={playerBot} health={playerHealth.current} position={[-1.3, 0.4, 0]} team="player"
+          controlled={manual} keysRef={keys} running={running}
           bodyRef={playerRef} targetBodyRef={oppRef} aggression={playerAggression}
           onHit={hit('player', playerDmg, oppHealth, oppRef, opponentBot)} />
-        <FightBot bot={opponentBot} health={oppHealth.current} position={[1.2, 0.4, 0]}
+        <FightBot bot={opponentBot} health={oppHealth.current} position={[1.3, 0.4, 0]} team="opponent"
+          running={running}
           bodyRef={oppRef} targetBodyRef={playerRef} aggression={opponentAggression}
           onHit={hit('opponent', oppDmg, playerHealth, playerRef, playerBot)} />
 
         {shatters.map((s) => (
-          <Debris key={s.key} position={s.position} fragments={s.fragments} onDone={() => removeShatter(s.key)} />
+          <Debris key={s.key} shatterKey={s.key} position={s.position} fragments={s.fragments} onRemove={removeShatter} />
         ))}
       </Physics>
-      <OrbitControls makeDefault target={[0, 0.3, 0]} />
+      <OrbitControls makeDefault target={[0, 0.3, 0]} minDistance={3} maxDistance={9} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )
 }

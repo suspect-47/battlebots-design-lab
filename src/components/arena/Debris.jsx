@@ -26,11 +26,12 @@ function Fragment({ basePos, frag }) {
 }
 
 // A burst of chunks from one destroyed module. Auto-removes itself after a few
-// seconds so debris doesn't accumulate forever.
-export default function Debris({ position, fragments, onDone, ttlMs = 4500 }) {
+// seconds so debris doesn't accumulate forever. `onRemove`/`shatterKey` are kept
+// separate (both stable) so Arena re-rendering on every hit never resets the TTL.
+export default function Debris({ position, fragments, onRemove, shatterKey, ttlMs = 4500 }) {
   useEffect(() => {
-    const id = setTimeout(onDone, ttlMs)
+    const id = setTimeout(() => onRemove(shatterKey), ttlMs)
     return () => clearTimeout(id)
-  }, [onDone, ttlMs])
+  }, [onRemove, shatterKey, ttlMs])
   return fragments.map((f, i) => <Fragment key={i} basePos={position} frag={f} />)
 }

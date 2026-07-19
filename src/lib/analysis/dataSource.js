@@ -18,8 +18,15 @@ export async function loadMeta() {
   }
 }
 
+// Enriched media (real Fandom images + verified YouTube videos) lives in the
+// committed snapshot; index it so the live-DB path can carry it too.
+const MEDIA_BY_NAME = new Map(
+  committedRoster.map((b) => [b.name, { imageUrl: b.imageUrl ?? null, cartoonUrl: b.cartoonUrl ?? null, videoId: b.videoId ?? null, videoTitle: b.videoTitle ?? null, url: b.url ?? null, weaponRaw: b.weaponRaw ?? null }])
+)
+
 // Load the roster: prefer the live bots table, fall back to committed bots.json.
-// Normalizes DB rows (weapon_class, ko_wins) to the roster shape.
+// Normalizes DB rows and merges in the enriched media by name so images/videos
+// are present regardless of source.
 export async function loadRoster() {
   try {
     const res = await fetch(`${API_BASE}/bots`)
@@ -27,7 +34,11 @@ export async function loadRoster() {
     const rows = await res.json()
     if (Array.isArray(rows) && rows.length) {
       return {
-        roster: rows.map((r) => ({ name: r.name, weapon: r.weapon_class || r.weapon, wins: r.wins, losses: r.losses, koWins: r.ko_wins ?? r.koWins })),
+        roster: rows.map((r) => ({
+          name: r.name, weapon: r.weapon_class || r.weapon, wins: r.wins, losses: r.losses, koWins: r.ko_wins ?? r.koWins,
+          weight: r.weight_lb ?? r.weight ?? null,
+          ...(MEDIA_BY_NAME.get(r.name) || {}),
+        })),
         source: 'live',
       }
     }

@@ -8,7 +8,11 @@
     "wins": 41,
     "losses": 18,
     "koWins": 26,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/e/ed/Witch_Doctor_BB_Pro_League_2026.png",
+    "videoId": "qaTIreDG45M",
+    "videoTitle": "REMATCH of the fight that changed BattleBots Forever | FoTW: Witch Doctor vs. Minotaur | WC7",
+    "cartoonUrl": "/bots/witch-doctor.png"
   },
   {
     "name": "Tombstone",
@@ -19,7 +23,11 @@
     "wins": 34,
     "losses": 17,
     "koWins": 25,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/8/83/Tombstone_Pro_League_2026.png",
+    "videoId": "l1QYKAK5DEU",
+    "videoTitle": "TOMBSTONE vs ORBITRON (VIDEO #6/6)",
+    "cartoonUrl": "/bots/tombstone.png"
   },
   {
     "name": "Falcon",
@@ -30,7 +38,11 @@
     "wins": 30,
     "losses": 8,
     "koWins": 5,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/07/Falcon_BBSeason4_2019.jpg",
+    "videoId": "F2X4Pq773Xg",
+    "videoTitle": "BattleBots Basement Tapes: MARVIN vs. FALCON",
+    "cartoonUrl": "/bots/falcon.png"
   },
   {
     "name": "SawBlaze",
@@ -41,7 +53,11 @@
     "wins": 29,
     "losses": 11,
     "koWins": 12,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/08/SawBlaze_2025_DAT.png",
+    "videoId": "tTKKUUYST8s",
+    "videoTitle": "The Winner Takes it ALL In Ferocious Final | SawBlaze Vs End Game | BattleBots",
+    "cartoonUrl": "/bots/sawblaze.png"
   },
   {
     "name": "HyperShock",
@@ -52,7 +68,11 @@
     "wins": 29,
     "losses": 22,
     "koWins": 24,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/3/3c/HyperShock_Pro_League_2026.png",
+    "videoId": "WZZHGeCkxzk",
+    "videoTitle": "THE REMATCH OF THE CENTURY! | Hypershock Vs Tombstone | BATTLEBOTS FACE OFF (SNEAK PEEK)",
+    "cartoonUrl": "/bots/hypershock.png"
   },
   {
     "name": "Whiplash",
@@ -63,7 +83,11 @@
     "wins": 28,
     "losses": 14,
     "koWins": 14,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/8/8c/Whiplash_BB2022.jpg",
+    "videoId": "YFUgTO9kGwY",
+    "videoTitle": "SAWBLAZE vs WHIPLASH | Season 5 | BattleBots Throwback Fights",
+    "cartoonUrl": "/bots/whiplash.png"
   },
   {
     "name": "Minotaur",
@@ -74,7 +98,11 @@
     "wins": 28,
     "losses": 11,
     "koWins": 21,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/1/19/Minotaur_Pro_League_2026.png",
+    "videoId": "qaTIreDG45M",
+    "videoTitle": "REMATCH of the fight that changed BattleBots Forever | FoTW: Witch Doctor vs. Minotaur | WC7",
+    "cartoonUrl": "/bots/minotaur.png"
   },
   {
     "name": "Skorpios",
@@ -85,7 +113,11 @@
     "wins": 27,
     "losses": 17,
     "koWins": 9,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/2/20/Skorpios_Pro_League_2026.png",
+    "videoId": "97mhwohdxug",
+    "videoTitle": "VERTICAL HAMMER SAW! Bloodsport vs Skorpios | Battlebots | Discovery",
+    "cartoonUrl": "/bots/skorpios.png"
   },
   {
     "name": "Bite Force",
@@ -96,7 +128,11 @@
     "wins": 26,
     "losses": 1,
     "koWins": 18,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/2/24/Bite_Force_BBSeason4_2019.jpg",
+    "videoId": null,
+    "videoTitle": null,
+    "cartoonUrl": "/bots/bite-force.png"
   },
   {
     "name": "End Game",
@@ -107,7 +143,11 @@
     "wins": 26,
     "losses": 12,
     "koWins": 21,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/6/65/End_Game_Pro_League_2026.png",
+    "videoId": "tTKKUUYST8s",
+    "videoTitle": "The Winner Takes it ALL In Ferocious Final | SawBlaze Vs End Game | BattleBots",
+    "cartoonUrl": "/bots/end-game.png"
   },
   {
     "name": "Hydra",
@@ -118,7 +158,10 @@
     "wins": 25,
     "losses": 8,
     "koWins": 16,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/2/2d/BB2022-hydra-bot.jpg",
+    "videoId": "9pQBkEqPhyY",
+    "videoTitle": "BattleBots Fight of the Week: Free Shipping vs. Hydra - from World Championship VII"
   },
   {
     "name": "Lock-Jaw",
@@ -129,7 +172,10 @@
     "wins": 23,
     "losses": 18,
     "koWins": 15,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/e/e3/Lock-Jaw_BB2022.jpg",
+    "videoId": "L9knDUzrK9g",
+    "videoTitle": "TORN TO SHREDS! Ribbot vs Lockjaw | Battlebots | Discovery"
   },
   {
     "name": "Valkyrie",
@@ -140,7 +186,10 @@
     "wins": 22,
     "losses": 15,
     "koWins": 14,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/5/50/Valkyrie_BB_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "HUGE",
@@ -151,7 +200,10 @@
     "wins": 21,
     "losses": 12,
     "koWins": 10,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/3/39/HUGE_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Black Dragon",
@@ -162,7 +214,10 @@
     "wins": 20,
     "losses": 11,
     "koWins": 12,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/8/85/BB2022-black-dragon-bot.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "ROTATOЯ",
@@ -173,7 +228,10 @@
     "wins": 20,
     "losses": 15,
     "koWins": 12,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/b/b3/Rotator_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Bloodsport",
@@ -184,7 +242,10 @@
     "wins": 20,
     "losses": 15,
     "koWins": 15,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/c9/Bloodsport_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Icewave",
@@ -195,7 +256,10 @@
     "wins": 19,
     "losses": 16,
     "koWins": 10,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/0d/IceWave_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Tantrum",
@@ -206,7 +270,10 @@
     "wins": 19,
     "losses": 12,
     "koWins": 12,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/0c/BB2022-tantrum-bot.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Gigabyte",
@@ -217,7 +284,10 @@
     "wins": 18,
     "losses": 15,
     "koWins": 16,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/a/a6/Gigabyte_PG.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Copperhead",
@@ -228,7 +298,10 @@
     "wins": 17,
     "losses": 8,
     "koWins": 10,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/b/bc/Copperhead_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Cobalt",
@@ -239,7 +312,10 @@
     "wins": 14,
     "losses": 10,
     "koWins": 11,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/ce/Cobalt_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Bronco",
@@ -250,7 +326,10 @@
     "wins": 13,
     "losses": 9,
     "koWins": 11,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/a/a1/Bronco_BB2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Riptide",
@@ -261,7 +340,10 @@
     "wins": 12,
     "losses": 3,
     "koWins": 11,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/7/70/Riptide_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Beta",
@@ -272,7 +354,10 @@
     "wins": 10,
     "losses": 7,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/a/a1/Beta_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Mammoth",
@@ -283,7 +368,10 @@
     "wins": 10,
     "losses": 15,
     "koWins": 6,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/4/4a/Mammoth_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Blip",
@@ -294,7 +382,10 @@
     "wins": 9,
     "losses": 6,
     "koWins": 6,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/d/d3/BB2022-blip-bot.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Complete Control",
@@ -305,7 +396,10 @@
     "wins": 9,
     "losses": 8,
     "koWins": 0,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/c2/Completecontrol_bot2016.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Claw Viper",
@@ -316,7 +410,10 @@
     "wins": 9,
     "losses": 10,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/6/62/Claw_Viper_FaceOffs.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "DeathRoll",
@@ -327,7 +424,10 @@
     "wins": 9,
     "losses": 9,
     "koWins": 8,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/d/d8/DeathRoll_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Free Shipping",
@@ -338,7 +438,10 @@
     "wins": 9,
     "losses": 15,
     "koWins": 5,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/7/7b/Free_Shipping_FaceOffs.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Blacksmith",
@@ -349,7 +452,10 @@
     "wins": 8,
     "losses": 12,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/8/8f/Blacksmith_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Brutality",
@@ -360,7 +466,10 @@
     "wins": 8,
     "losses": 0,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/6/6a/Brutality_Collegiate_2009.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Banshee",
@@ -371,7 +480,10 @@
     "wins": 7,
     "losses": 5,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/1/11/Banshee_Pro_League_2026.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Captain Shrederator",
@@ -382,7 +494,10 @@
     "wins": 7,
     "losses": 21,
     "koWins": 7,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/7/76/Captain_Shred_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "frenZy",
@@ -393,7 +508,10 @@
     "wins": 7,
     "losses": 13,
     "koWins": 0,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/cf/Frenzy_5.0.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "RIPperoni",
@@ -404,7 +522,10 @@
     "wins": 6,
     "losses": 3,
     "koWins": 5,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/5/57/RIPperoni_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Bombshell",
@@ -415,7 +536,10 @@
     "wins": 6,
     "losses": 11,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/b/b5/Bombshell_BBSeason4_2019.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Ghost Raptor",
@@ -426,7 +550,10 @@
     "wins": 6,
     "losses": 10,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/c3/Ghost_Raptor_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Chomp",
@@ -437,7 +564,10 @@
     "wins": 5,
     "losses": 12,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/1/16/Chomp_BB2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Deep Six",
@@ -448,7 +578,10 @@
     "wins": 5,
     "losses": 4,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/e/ec/Deep_Six_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "DUCK!",
@@ -459,7 +592,10 @@
     "wins": 5,
     "losses": 11,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/0c/DUCK%21_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Fusion",
@@ -470,7 +606,10 @@
     "wins": 5,
     "losses": 10,
     "koWins": 4,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/b/bd/Fusion_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Big Dill",
@@ -481,7 +620,10 @@
     "wins": 4,
     "losses": 10,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/d/d3/Big_Dill_FaceOffs.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Brutus",
@@ -492,7 +634,10 @@
     "wins": 4,
     "losses": 4,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/01/Brutus_s8.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Disarray",
@@ -503,7 +648,10 @@
     "wins": 4,
     "losses": 7,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/06/Disarray_Pro_League.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "DOOM",
@@ -514,7 +662,10 @@
     "wins": 4,
     "losses": 7,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/e/e2/DOOM_FaceOffs_2024.png",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Gemini",
@@ -525,7 +676,10 @@
     "wins": 4,
     "losses": 7,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/6/60/Gemini-bot-2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Breaker Box",
@@ -536,7 +690,10 @@
     "wins": 3,
     "losses": 7,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/a/a5/Breaker-Box-Bot-S20192.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Deadlift",
@@ -547,7 +704,10 @@
     "wins": 3,
     "losses": 6,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/b/b8/Deadlift_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Eugene",
@@ -558,7 +718,10 @@
     "wins": 3,
     "losses": 2,
     "koWins": 3,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/1/1f/Eugene2.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Bender",
@@ -569,7 +732,10 @@
     "wins": 2,
     "losses": 9,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/06/Bender2009.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Blade",
@@ -580,7 +746,10 @@
     "wins": 2,
     "losses": 4,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/f/f5/ORBY_BLADE_BB2021_%282%29.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Defender",
@@ -591,7 +760,10 @@
     "wins": 2,
     "losses": 3,
     "koWins": 0,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/0/0f/Defender-bot-2021s6.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Emulsifier",
@@ -602,7 +774,10 @@
     "wins": 2,
     "losses": 4,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/5/56/Emulcifier_BB2022.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Extinguisher",
@@ -613,7 +788,10 @@
     "wins": 2,
     "losses": 6,
     "koWins": 2,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/c9/Extinguisher-bot-2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Axe Backwards",
@@ -624,7 +802,10 @@
     "wins": 1,
     "losses": 10,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/ca/Axe-Backwards-bot-2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Bale Spear",
@@ -635,7 +816,10 @@
     "wins": 1,
     "losses": 6,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/1/18/Bale-Spear-bot-2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Chronos",
@@ -646,7 +830,10 @@
     "wins": 1,
     "losses": 5,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/f/fd/Chronos-bot-2020.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Double Jeopardy",
@@ -657,7 +844,10 @@
     "wins": 1,
     "losses": 5,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/c/c1/Double_Jeopardy_BB2021.jpg",
+    "videoId": null,
+    "videoTitle": null
   },
   {
     "name": "Fireball",
@@ -668,6 +858,9 @@
     "wins": 1,
     "losses": 4,
     "koWins": 1,
-    "seasons": null
+    "seasons": null,
+    "imageUrl": "https://static.wikia.nocookie.net/battlebots/images/a/ae/Fireball.png",
+    "videoId": null,
+    "videoTitle": null
   }
 ]

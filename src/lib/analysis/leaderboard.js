@@ -13,6 +13,9 @@ export function topBots(roster, n = 10) {
         koWins,
         winRate: games ? wins / games : 0,
         koRate: koWins / Math.max(1, wins),
+        imageUrl: b.imageUrl ?? null,
+        cartoonUrl: b.cartoonUrl ?? null,
+        url: b.url ?? null,
       }
     })
     .sort((x, y) => y.wins - x.wins || y.winRate - x.winRate)

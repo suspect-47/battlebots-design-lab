@@ -1,10 +1,10 @@
-function side(label, result, color) {
+function Side({ label, result, accent }) {
   const won = result?.winner === 'a'
   return (
-    <div className="flex-1">
-      <div className="text-[10px] tracking-widest text-cyan-300/50">{label}</div>
-      <div className={`text-sm ${color}`}>{won ? 'WIN' : 'LOSS'}</div>
-      <div className="text-[11px] text-cyan-100/50">{result ? `${Math.round(result.hpFrac * 100)}% HP left` : '—'}</div>
+    <div className="flex-1 px-3 py-2.5 glass-card" style={{ '--accent': accent }}>
+      <div className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-3)]">{label}</div>
+      <div className="display text-[18px] mt-1" style={{ color: won ? accent : 'var(--magenta)' }}>{won ? 'WIN' : 'LOSS'}</div>
+      <div className="mono text-[10px] text-[var(--ink-3)] mt-0.5">{result ? `${Math.round(result.hpFrac * 100)}% HP left` : '—'}</div>
     </div>
   )
 }
@@ -15,17 +15,21 @@ export default function ComparisonPanel({ comparison }) {
   const converted = gain.wins > 0
   const hpPct = Math.round(gain.hpMargin * 100)
   return (
-    <div className="mono p-4 space-y-3">
-      <div className="text-[10px] tracking-widest text-cyan-300/60">SOCIETY vs SINGLE-AGENT</div>
-      <div className="flex gap-4">
-        {side('AGENT SOCIETY', society, 'text-cyan-300')}
-        {side('SINGLE AGENT', baseline, 'text-amber-300/80')}
+    <div className="p-4 space-y-3">
+      <div className="panel-hd" style={{ '--accent': 'var(--cyan)' }}>Society vs Single-Agent</div>
+      <div className="flex gap-2.5">
+        <Side label="Agent Society" result={society} accent="var(--cyan)" />
+        <Side label="Single Agent" result={baseline} accent="var(--amber)" />
       </div>
-      <div className="pt-2 border-t border-cyan-400/15 space-y-1">
-        {converted && <div className="text-xs text-cyan-300">✓ Society WON where the single agent was KO'd</div>}
-        <div className="text-xs">
-          <span className="text-cyan-100/60">Surviving-HP margin: </span>
-          <span className={hpPct >= 0 ? 'text-cyan-300' : 'text-red-400'}>{hpPct >= 0 ? '+' : ''}{hpPct}%</span>
+      <div className="pt-2 border-t border-[var(--line)] space-y-1.5">
+        {converted && (
+          <div className="mono text-[11px] flex items-center gap-1.5" style={{ color: 'var(--lime)' }}>
+            <span>✓</span> Society WON where the single agent was KO'd
+          </div>
+        )}
+        <div className="flex justify-between items-baseline">
+          <span className="mono text-[11px] text-[var(--ink-3)]">Surviving-HP margin</span>
+          <span className="mono text-[15px] tnum font-bold" style={{ color: hpPct >= 0 ? 'var(--lime)' : 'var(--magenta)' }}>{hpPct >= 0 ? '+' : ''}{hpPct}%</span>
         </div>
       </div>
     </div>

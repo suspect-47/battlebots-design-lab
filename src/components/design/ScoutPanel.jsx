@@ -1,13 +1,27 @@
-export default function ScoutPanel({ scout }) {
+export default function ScoutPanel({ scout, image }) {
   if (!scout) return null
-  const threatColor = scout.threat === 'high' ? 'text-red-400' : scout.threat === 'medium' ? 'text-amber-400' : 'text-cyan-300'
+  const threatColor = scout.threat === 'high' ? 'var(--magenta)' : scout.threat === 'medium' ? 'var(--amber)' : 'var(--cyan)'
   return (
-    <div className="mono text-xs text-cyan-100/80 p-4 space-y-1 border-b border-cyan-400/15">
-      <div className="text-[10px] tracking-widest text-cyan-300/60">SCOUT REPORT</div>
-      <div className="flex justify-between"><span>OPPONENT</span><span className="text-cyan-200">{scout.name}</span></div>
-      <div className="flex justify-between"><span>WEAPON</span><span>{scout.weaponClass}</span></div>
-      <div className="flex justify-between"><span>THREAT</span><span className={threatColor}>{scout.threat.toUpperCase()}</span></div>
-      <div className="flex justify-between"><span>COUNTER</span><span className="text-amber-300">{scout.counterArmor} armor</span></div>
+    <div className="p-4 space-y-2.5 border-b border-[var(--line)]">
+      <div className="flex items-center gap-2.5">
+        {image && <img src={image} alt={scout.name} className="w-9 h-9 rounded-md object-cover border" style={{ borderColor: threatColor, boxShadow: `0 0 12px -3px ${threatColor}` }} />}
+        <div className="panel-hd" style={{ '--accent': threatColor }}>Scout Report</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Stat label="Opponent" value={scout.name} color="var(--ink)" />
+        <Stat label="Weapon" value={scout.weaponClass} />
+        <Stat label="Threat" value={scout.threat.toUpperCase()} color={threatColor} />
+        <Stat label="Counter" value={`${scout.counterArmor} armor`} color="var(--amber)" />
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value, color = 'var(--ink-2)' }) {
+  return (
+    <div className="px-2.5 py-2 glass-card">
+      <div className="mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-3)]">{label}</div>
+      <div className="mono text-[12px] mt-0.5 truncate" style={{ color }}>{value}</div>
     </div>
   )
 }

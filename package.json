@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "ingest": "node server/ingest/run.js",
+    "enrich": "node scripts/enrich.mjs",
+    "cartoonize": "node scripts/cartoonize.mjs",
     "api": "node server/api/server.js"
   },
   "dependencies": {

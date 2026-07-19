@@ -2,10 +2,11 @@ import Fastify from 'fastify'
 import { runDesign } from '../agents/designService.js'
 import { pickAgent, deterministicAgent } from '../agents/agent.js'
 import { pickVerdictAgent } from '../agents/verdictAgent.js'
+import { pickChatAgent } from '../agents/chatAgent.js'
 import { fightContext } from '../../src/lib/verdict/fightVerdict.js'
 import { aggregateByClass } from '../../src/lib/analysis/aggregate.js'
 
-export function buildApp({ pool, agent, roster, verdictAgent } = {}) {
+export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) {
   const app = Fastify({ logger: false })
 
   // Permissive CORS so the Vite frontend (different port) can call /design for
@@ -55,6 +56,24 @@ export function buildApp({ pool, agent, roster, verdictAgent } = {}) {
     }
     const ctx = fightContext(playerBot, opponentRecord, winner)
     return (verdictAgent || pickVerdictAgent(process.env)).verdict(ctx)
+  })
+
+  // Freya AI chat. Pure-AI (no deterministic fallback): without a server-side
+  // OPENAI_API_KEY there is no agent, so return 503 for the UI to surface.
+  app.post('/chat', async (request, reply) => {
+    const { messages } = request.body || {}
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return reply.code(400).send({ error: 'messages[] required' })
+    }
+    const useChat = chatAgent || pickChatAgent(process.env)
+    if (!useChat) {
+      return reply.code(503).send({ error: 'AI chat unavailable — set OPENAI_API_KEY on the backend (npm run api).' })
+    }
+    try {
+      return await useChat.reply(messages.slice(-16))
+    } catch (err) {
+      return reply.code(502).send({ error: `AI upstream error: ${err.message}` })
+    }
   })
 
   return app
