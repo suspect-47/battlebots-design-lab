@@ -1,11 +1,29 @@
 import { describe, it, expect } from 'vitest'
 import { buildApp } from './app.js'
 import { deterministicAgent } from '../agents/agent.js'
+import { defaultBot } from '../../src/lib/scene/defaultBot.js'
 
 const roster = [{ name: 'Tombstone', weapon: 'horizontal_spinner', wins: 40, losses: 8, koWins: 34 }]
 const fakePool = { query: async () => ({ rows: [] }) }
 
 describe('POST /design', () => {
+  it('starts the search from a caller-supplied seedBot', async () => {
+    const app = buildApp({ pool: fakePool, agent: deterministicAgent, roster })
+    const seedBot = defaultBot()
+    const res = await app.inject({ method: 'POST', url: '/design', payload: { opponentName: 'Tombstone', seedBot } })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.seedSource).toBe('lab')
+    expect(body.seedBot.modules).toHaveLength(seedBot.modules.length)
+  })
+
+  it('falls back to the neutral seed when the supplied build is unusable', async () => {
+    const app = buildApp({ pool: fakePool, agent: deterministicAgent, roster })
+    const res = await app.inject({ method: 'POST', url: '/design', payload: { opponentName: 'Tombstone', seedBot: { nope: true } } })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().seedSource).toBe('neutral')
+  })
+
   it('returns a negotiated design with transcript and comparison', async () => {
     const app = buildApp({ pool: fakePool, agent: deterministicAgent, roster })
     const res = await app.inject({ method: 'POST', url: '/design', payload: { opponentName: 'Tombstone' } })

@@ -1,9 +1,12 @@
 import { useRef } from 'react'
-import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier'
+import { RigidBody, CuboidCollider, CylinderCollider, ConvexHullCollider } from '@react-three/rapier'
 import { useFrame } from '@react-three/fiber'
 import { botToColliders } from '../../lib/sim/botToColliders.js'
 import { botToMeshes } from '../../lib/scene/botToMeshes.js'
 import { opponentDrive } from '../../lib/sim/opponentDrive.js'
+import { getShape } from '../../lib/shapes/registry.js'
+import { damageTint, moduleHpFraction } from '../../lib/scene/damageTint.js'
+import CadPart from '../scene/CadPart.jsx'
 import { readDrive } from './useKeys.js'
 
 const DRIVE_SPEED = 1.4
@@ -13,7 +16,7 @@ const TEAM = { player: '#1fe3e8', opponent: '#ff2e6e' }
 // A fighter: the bot's real 3D shape, solid + team-coloured. The weapon reads
 // as a real combat weapon — a cylinder spinner stands upright as a front blade
 // and spins on the correct axis. Frozen (weapon idling) until `running`.
-function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggression = 0.6, onHit, bodyRef, team = 'opponent', controlled = false, keysRef, running = true }) {
+function FightBot({ bot, health, position = [0, 0.3, 0], rotation = [0, 0, 0], targetBodyRef, aggression = 0.6, onHit, bodyRef, team = 'opponent', controlled = false, keysRef, running = true }) {
   const { colliders, weaponId } = botToColliders(bot)
   const meshes = botToMeshes(bot)
   const teamColor = TEAM[team] || TEAM.opponent
@@ -50,12 +53,12 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
     body.setAngvel({ x: 0, y: steer * TURN_RATE, z: 0 }, true)
   })
 
-  const mat = (isWeapon) => (
-    <meshStandardMaterial color={teamColor} emissive={teamColor} emissiveIntensity={isWeapon ? 0.6 : 0.22} metalness={0.7} roughness={0.32} toneMapped={false} />
-  )
+  // Weapon reach, straight from the shape module — the same number the damage
+  // model uses for tip speed, so the drawn envelope cannot drift from the physics.
+  const weaponReach = weaponModule ? getShape(weaponModule.shape).tipRadius(weaponModule.params) : 0
 
   return (
-    <RigidBody ref={bodyRef} position={position} colliders={false} linearDamping={0.55} angularDamping={0.6}>
+    <RigidBody ref={bodyRef} position={position} rotation={rotation} colliders={false} linearDamping={0.55} angularDamping={0.6}>
       {colliders.map((c) => {
         const m = health?.[c.id]
         if (m?.detached) return null
@@ -64,9 +67,9 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
           if (!targetBodyRef?.current || event.other?.rigidBody !== targetBodyRef.current) return
           onHit?.(c.id, isWeapon ? 1.0 : 0.4)
         }
-        return c.shape === 'cuboid'
-          ? <CuboidCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
-          : <CylinderCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
+        if (c.shape === 'cuboid') return <CuboidCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
+        if (c.shape === 'hull') return <ConvexHullCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
+        return <CylinderCollider key={c.id} args={c.args} position={c.position} onContactForce={onContactForce} />
       })}
 
       {/* team ground ring */}
@@ -75,26 +78,47 @@ function FightBot({ bot, health, position = [0, 0.3, 0], targetBodyRef, aggressi
         <meshBasicMaterial color={teamColor} transparent opacity={0.85} toneMapped={false} />
       </mesh>
 
-      {meshes.map((mesh) => {
-        if (health?.[mesh.id]?.detached) return null
-        const isWeapon = mesh.id === weaponId
-        // spinner disc → stand it upright as a front blade (spins on the correct
-        // axis inside a rotated group); other parts render as-is
-        if (isWeapon && mesh.geometry === 'cylinder') {
+      {/* Weapon clearance envelope: the radius the tip actually sweeps. A CAD
+          convention, and it also communicates threat range at a glance. */}
+      {weaponReach > 0 && (
+        <mesh position={[0, -0.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[weaponReach * 0.97, weaponReach, 64]} />
+          <meshBasicMaterial color={teamColor} transparent opacity={0.28} toneMapped={false} />
+        </mesh>
+      )}
+
+      {meshes.map((mod) => {
+        if (health?.[mod.id]?.detached) return null
+        const isWeapon = mod.id === weaponId
+        // Parts are coloured by the metal they are made from and tinted by how
+        // beaten up they are. Team identity lives in the edge outline and the
+        // ground ring, so a bot reads as a machine rather than a flat blob.
+        const hpFrac = moduleHpFraction(health, mod.id)
+        const color = damageTint(mod.color, hpFrac)
+        const partMeshes = mod.parts.map((part, i) => (
+          <CadPart
+            key={i}
+            geometry={part.geometry}
+            args={part.args}
+            position={part.position}
+            rotation={part.rotation}
+            color={color}
+            edgeColor={teamColor}
+          />
+        ))
+        // spinner disc → stand it upright as a front blade (the inner group spins on
+        // the correct axis); other modules render flat at their mount point
+        if (isWeapon && mod.parts[0]?.geometry === 'cylinder') {
           return (
-            <group key={mesh.id} position={mesh.position} rotation={[0, 0, Math.PI / 2]}>
-              <mesh ref={weaponMeshRef}>
-                <cylinderGeometry args={mesh.args} />
-                {mat(true)}
-              </mesh>
+            <group key={mod.id} position={mod.position} rotation={[0, 0, Math.PI / 2]}>
+              <group ref={weaponMeshRef}>{partMeshes}</group>
             </group>
           )
         }
         return (
-          <mesh key={mesh.id} position={mesh.position} ref={isWeapon ? weaponMeshRef : undefined}>
-            {mesh.geometry === 'box' ? <boxGeometry args={mesh.args} /> : <cylinderGeometry args={mesh.args} />}
-            {mat(isWeapon)}
-          </mesh>
+          <group key={mod.id} position={mod.position} ref={isWeapon ? weaponMeshRef : undefined}>
+            {partMeshes}
+          </group>
         )
       })}
     </RigidBody>

@@ -1,92 +1,54 @@
 // src/lib/design/usePlayback.js
-import { useEffect, useRef, useState } from 'react'
-import { SEAT_ORDER } from './agentMeta.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-const BEAT_MS = 1400 // base dwell per beat at 1x
-
-// Pure: given the full timeline and a current index, produce everything the
-// scene needs to render. Testable without React.
-export function deriveSceneState(timeline, index) {
-  const clamped = Math.max(0, Math.min(index, timeline.length - 1))
-  const beat = timeline[clamped] || null
-  const seen = timeline.slice(0, clamped + 1)
-  const next = timeline[clamped + 1] || null
-
-  const activeRole = beat && beat.role ? beat.role : null
-  const nextRole = next && next.role ? next.role : null
-
-  let weightLb = null
-  let round = null
-  const chips = { weapon: false, armor: false, drivetrain: false }
-  const spoken = new Set()
-  for (const b of seen) {
-    if (b.weightLb != null) weightLb = b.weightLb
-    if (b.round != null) round = b.round
-    if (b.kind === 'speak' && b.chip) chips[b.chip] = true
-    if (b.role) spoken.add(b.role)
-  }
-
-  const seatStates = {}
-  for (const role of SEAT_ORDER) {
-    if (role === activeRole) seatStates[role] = 'speaking'
-    else if (role === nextRole) seatStates[role] = 'thinking'
-    else if (spoken.has(role)) seatStates[role] = 'done'
-    else seatStates[role] = 'idle'
-  }
-  // Chief arbitrates every proposal: light it up alongside the active speaker.
-  if (beat && beat.kind === 'speak') seatStates.chief = 'speaking'
-
-  // Moods drive the robot faces. Reactions key off the current beat.
-  const seatMoods = {}
-  for (const role of SEAT_ORDER) {
-    if (seatStates[role] === 'speaking') seatMoods[role] = 'speaking'
-    else if (seatStates[role] === 'thinking') seatMoods[role] = 'thinking'
-    else seatMoods[role] = 'idle'
-  }
-  if (beat && beat.kind === 'speak') {
-    seatMoods[beat.role] = beat.accepted ? 'speaking' : 'annoyed'
-    seatMoods.chief = beat.accepted ? 'happy' : 'stern'
-  } else if (beat && beat.kind === 'converged') {
-    seatMoods.chief = 'happy'
-  }
-
-  const payoff = beat && beat.kind === 'payoff' ? beat.comparison : null
-  return { activeRole, round, weightLb, chips, seatStates, seatMoods, payoff, beat, atEnd: clamped >= timeline.length - 1 }
-}
+const STEP_MS = 1600 // base dwell per ledger row at 1x
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-export function usePlayback(timeline) {
+// The whole replay is ONE integer.
+//
+// The ledger rows are the timeline, so there is no separate animation model to
+// keep in sync with them: rows 0..index are revealed, and every other panel
+// renders whatever the build looked like at `index`. Stepping is an increment;
+// playing is an interval over the same increment. Everything else is derived.
+export function useCursor(length) {
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const len = timeline.length
 
-  // New timeline arrives → reset. Reduced motion jumps to the end, no autoplay.
+  // A fresh run resets to the top. Reduced motion lands on the finished result
+  // instead of animating toward it.
   useEffect(() => {
-    if (len === 0) { setIndex(0); setPlaying(false); return }
-    if (prefersReducedMotion()) { setIndex(len - 1); setPlaying(false) }
+    if (length === 0) { setIndex(0); setPlaying(false); return }
+    if (prefersReducedMotion()) { setIndex(length - 1); setPlaying(false) }
     else { setIndex(0); setPlaying(true) }
-  }, [timeline, len])
+  }, [length])
 
   const timer = useRef(null)
   useEffect(() => {
-    if (!playing || len === 0) return
-    if (index >= len - 1) { setPlaying(false); return }
-    timer.current = setTimeout(() => setIndex((i) => Math.min(i + 1, len - 1)), BEAT_MS / speed)
+    if (!playing || length === 0) return undefined
+    if (index >= length - 1) { setPlaying(false); return undefined }
+    timer.current = setTimeout(() => setIndex((i) => Math.min(i + 1, length - 1)), STEP_MS / speed)
     return () => clearTimeout(timer.current)
-  }, [playing, index, speed, len])
+  }, [playing, index, speed, length])
+
+  const goTo = useCallback((i) => {
+    setPlaying(false)
+    setIndex(Math.max(0, Math.min(i, length - 1)))
+  }, [length])
 
   const controls = {
-    toggle: () => setPlaying((p) => (index >= len - 1 ? false : !p)),
-    step: () => { setPlaying(false); setIndex((i) => Math.min(i + 1, len - 1)) },
+    goTo,
+    toggle: () => setPlaying((p) => (index >= length - 1 ? false : !p)),
+    step: () => { setPlaying(false); setIndex((i) => Math.min(i + 1, length - 1)) },
+    back: () => { setPlaying(false); setIndex((i) => Math.max(i - 1, 0)) },
     replay: () => { setIndex(0); setPlaying(true) },
-    skipToEnd: () => { setPlaying(false); setIndex(len - 1) },
+    skipToEnd: () => { setPlaying(false); setIndex(length - 1) },
     setSpeed,
   }
-  const scene = len ? deriveSceneState(timeline, index) : null
-  return { index, beat: timeline[index] || null, scene, playing, speed, controls }
+
+  return { index, playing, speed, controls, atEnd: index >= length - 1 }
 }

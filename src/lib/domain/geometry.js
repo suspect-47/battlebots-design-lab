@@ -1,10 +1,8 @@
 import { getMaterial } from './materials.js'
+import { getShape } from '../shapes/registry.js'
 
 export function moduleVolume(module) {
-  const p = module.params
-  if (module.shape === 'box') return p.x * p.y * p.z
-  if (module.shape === 'cylinder') return Math.PI * p.radius * p.radius * p.length
-  throw new Error(`unknown shape: ${module.shape}`)
+  return getShape(module.shape).volume(module.params)
 }
 
 export function moduleMass(module) {

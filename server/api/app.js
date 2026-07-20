@@ -33,7 +33,7 @@ export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) 
   })
 
   app.post('/design', async (request, reply) => {
-    const { opponentName, opponentRecord, memory } = request.body || {}
+    const { opponentName, opponentRecord, memory, seedBot } = request.body || {}
     // resolve opponent: caller-supplied record (frontend has the roster) OR the
     // injected roster (tests) OR the bots table.
     let record = opponentRecord || null
@@ -46,7 +46,9 @@ export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) 
     }
     if (!record) return reply.code(400).send({ error: `unknown opponent: ${opponentName}` })
     const useAgent = agent || pickAgent(process.env) || deterministicAgent
-    return runDesign({ opponentRecord: record, agent: useAgent, memory })
+    // seedBot is optional: the studio sends the caller's current Lab build so
+    // the search answers "what should I change about MY bot". runDesign vets it.
+    return runDesign({ opponentRecord: record, agent: useAgent, memory, seedBot })
   })
 
   app.post('/verdict', async (request, reply) => {

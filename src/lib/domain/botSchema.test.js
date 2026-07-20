@@ -37,3 +37,55 @@ describe('botSchema', () => {
     expect(validateBot(bot).errors.join()).toMatch(/duplicate/i)
   })
 })
+
+describe('shape validation against the registry', () => {
+  const base = () => ({
+    schemaVersion: 1,
+    name: 'T',
+    drivetrain: '4wd',
+    modules: [
+      { id: 'chassis', role: 'chassis', shape: 'box', params: { x: 0.4, y: 0.05, z: 0.3 }, material: 'titanium', mountPoint: { x: 0, y: 0, z: 0 }, thickness: 0.006, exposedArea: 0.2 },
+      { id: 'drive', role: 'drivetrain', shape: 'box', params: { x: 0.3, y: 0.05, z: 0.1 }, material: 'aluminum', mountPoint: { x: 0, y: -0.05, z: 0 }, thickness: 0.005, exposedArea: 0.1 },
+    ],
+  })
+
+  it('accepts a bot whose shapes are all registered', () => {
+    expect(validateBot(base()).ok).toBe(true)
+  })
+
+  // Caught by zod, so the error path is the index path (modules.0.shape), not the
+  // module id — validateBot returns early on a parse failure.
+  it('rejects an unregistered shape, naming the offender and the valid shapes', () => {
+    const b = base()
+    b.modules[0].shape = 'sphere'
+    const r = validateBot(b)
+    expect(r.ok).toBe(false)
+    expect(r.errors.join(' ')).toMatch(/modules\.0\.shape/)
+    expect(r.errors.join(' ')).toMatch(/sphere/)
+    expect(r.errors.join(' ')).toMatch(/box/)
+    expect(r.errors.join(' ')).toMatch(/cylinder/)
+  })
+
+  it('parseBot throws on an unregistered shape', () => {
+    const b = base()
+    b.modules[0].shape = 'sphere'
+    expect(() => parseBot(b)).toThrow()
+  })
+
+  // zod's z.record permits absent keys, so this reaches the id-aware manual loop.
+  it('rejects a module missing a param its shape requires, naming the module', () => {
+    const b = base()
+    delete b.modules[0].params.z
+    const r = validateBot(b)
+    expect(r.ok).toBe(false)
+    expect(r.errors.join(' ')).toMatch(/chassis/)
+    expect(r.errors.join(' ')).toMatch(/'z'/)
+  })
+
+  // Caught by the existing z.record(z.string(), z.number()) before the manual loop.
+  it('rejects a non-numeric param', () => {
+    const b = base()
+    b.modules[0].params.z = 'wide'
+    expect(validateBot(b).ok).toBe(false)
+  })
+})

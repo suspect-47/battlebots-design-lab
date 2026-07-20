@@ -1,11 +1,19 @@
 import { z } from 'zod'
+import { hasShape, shapeNames, getShape } from '../shapes/registry.js'
 
 const Vec3 = z.object({ x: z.number(), y: z.number(), z: z.number() })
 
 const ModuleSchema = z.object({
   id: z.string().min(1),
   role: z.enum(['chassis', 'weapon', 'armor', 'drivetrain', 'battery']),
-  shape: z.enum(['box', 'cylinder']),
+  shape: z.string().min(1).superRefine((v, ctx) => {
+    if (!hasShape(v)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `unknown shape: ${v} (expected one of: ${shapeNames().join(', ')})`,
+      })
+    }
+  }),
   params: z.record(z.string(), z.number()),
   material: z.string().min(1),
   mountPoint: Vec3,
@@ -41,5 +49,18 @@ export function validateBot(bot) {
   const ids = mods.map((m) => m.id)
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i)
   if (dupes.length) errors.push(`duplicate module ids: ${[...new Set(dupes)].join(', ')}`)
+  // Shape params are a generic z.record, so zod cannot check that a module carries
+  // the params its shape actually needs. Do it here, where the module id is in hand.
+  for (const m of mods) {
+    if (!hasShape(m.shape)) {
+      errors.push(`module ${m.id}: unknown shape '${m.shape}' (expected one of: ${shapeNames().join(', ')})`)
+      continue
+    }
+    for (const key of getShape(m.shape).params) {
+      if (typeof m.params?.[key] !== 'number' || !Number.isFinite(m.params[key])) {
+        errors.push(`module ${m.id}: shape '${m.shape}' requires param '${key}'`)
+      }
+    }
+  }
   return { ok: errors.length === 0, errors }
 }

@@ -1,3 +1,6 @@
+import { titleCase } from '../../lib/ui/format.js'
+import { MATERIALS } from '../../lib/domain/materials.js'
+
 export default function ScoutPanel({ scout, image }) {
   if (!scout) return null
   const threatColor = scout.threat === 'high' ? 'var(--magenta)' : scout.threat === 'medium' ? 'var(--amber)' : 'var(--cyan)'
@@ -9,9 +12,13 @@ export default function ScoutPanel({ scout, image }) {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Opponent" value={scout.name} color="var(--ink)" />
-        <Stat label="Weapon" value={scout.weaponClass} />
+        <Stat label="Weapon" value={titleCase(scout.weaponClass)} />
         <Stat label="Threat" value={scout.threat.toUpperCase()} color={threatColor} />
-        <Stat label="Counter" value={`${scout.counterArmor} armor`} color="var(--amber)" />
+        <Stat label="Counter armor" value={MATERIALS[scout.counterArmor]?.label || titleCase(scout.counterArmor)} color="var(--amber)" />
+      </div>
+      <div className="scout-recommendation" style={{ '--accent': threatColor }}>
+        <span className="mission-tip-icon">↗</span>
+        <span>{scout.counterHint || 'Build around the opponent’s biggest weakness.'}</span>
       </div>
     </div>
   )

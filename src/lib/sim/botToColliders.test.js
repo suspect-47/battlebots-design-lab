@@ -11,11 +11,20 @@ describe('botToColliders', () => {
     expect(chassis.args).toEqual([0.25, 0.025, 0.175])
   })
 
+  // An explicit fixture, not defaultBot's weapon: what this asserts is the
+  // cylinder mapping, and it should not start failing because the starter build
+  // switched to a different weapon shape.
   it('maps a cylinder to [halfHeight, radius]', () => {
-    const { colliders } = botToColliders(defaultBot())
-    const weapon = colliders.find((c) => c.id === 'weapon')
-    expect(weapon.shape).toBe('cylinder')
-    expect(weapon.args).toEqual([0.05, 0.12]) // length0.1/2, radius0.12
+    const bot = {
+      modules: [{
+        id: 'roller', role: 'weapon', shape: 'cylinder',
+        params: { radius: 0.12, length: 0.1 }, material: 'ar500_steel',
+        mountPoint: { x: 0, y: 0, z: 0 },
+      }],
+    }
+    const { colliders } = botToColliders(bot)
+    expect(colliders[0].shape).toBe('cylinder')
+    expect(colliders[0].args).toEqual([0.05, 0.12]) // length0.1/2, radius0.12
   })
 
   it('identifies the weapon id to spin', () => {

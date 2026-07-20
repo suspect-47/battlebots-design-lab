@@ -3,6 +3,8 @@
 // and deterministic — the arena spawns these as debris rigid bodies when the
 // module is destroyed. No three/rapier imports.
 
+import { getShape } from '../shapes/registry.js'
+
 // deterministic pseudo-jitter from integer cell indices (no Math.random)
 function jitter(i, j, k, salt) {
   const n = Math.sin((i * 12.9898 + j * 78.233 + k * 37.719 + salt * 3.17)) * 43758.5453
@@ -16,10 +18,7 @@ const MATERIAL_COLORS = {
 // module → fragment descriptors { size:[x,y,z], offset:[x,y,z], color } in the
 // module's local frame. Count scales with size (thin plates shatter into fewer).
 export function fractureFragments(module) {
-  const p = module.params
-  const [w, h, d] = module.shape === 'cylinder'
-    ? [p.radius * 2, p.length, p.radius * 2]
-    : [p.x, p.y, p.z]
+  const [w, h, d] = getShape(module.shape).bounds(module.params)
   const nx = 2
   const ny = h > 0.06 ? 2 : 1
   const nz = 2

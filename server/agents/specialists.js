@@ -1,44 +1,63 @@
-import { applyEdit } from './edits.js'
-import { computeBot } from '../../src/lib/domain/computeBot.js'
+// The specialists. Each owns one axis of the design space, ranks every option on
+// that axis by what IT cares about (see AGENT_OBJECTIVE), and argues for its
+// favourite. None of them can see the whole picture — the chief does that, and
+// routinely tells them no.
+import { evaluateAxis, scoreBuild, AGENT_OBJECTIVE } from './search.js'
+export { chiefArbitrate } from './chief.js'
 
-const VERTICAL_SPINNER = { type: 'setWeapon', shape: 'cylinder', params: { radius: 0.15, length: 0.12 }, material: 'ar500_steel', rpm: 2800 }
-const ARMOR_THICKNESS = 0.012 // negotiated plates run thicker than a naive soft build
+export const SPECIALIST_ROLES = ['weapon', 'armor', 'drivetrain']
 
-export function proposeWeapon(ctx) {
-  const weapon = ctx.bot.modules.find((m) => m.role === 'weapon')
-  // "vertical spinner" proxy: a fast steel cylinder. If already close, satisfied.
-  const isSpinner = weapon && weapon.shape === 'cylinder' && weapon.material === 'ar500_steel' && weapon.rpm >= 2400
-  if (isSpinner) return null
-  return { edit: VERTICAL_SPINNER, reasoning: 'Vertical spinner is the highest-KO class — swap to a fast steel drum.' }
+const lb = (n) => `${n > 0 ? '+' : ''}${n.toFixed(1)} lb`
+const exchanges = (n) => (n >= 400 ? 'indefinitely' : `${Math.round(n)} exchanges`)
+
+// Justification built from the numbers the agent actually optimised. Nothing
+// here is decorative — every claim names a field of the score it can be checked
+// against.
+function reasonFor(role, pick, before, scout) {
+  const s = pick.score
+  const dW = s.weightLb - before.weightLb
+  switch (role) {
+    case 'weapon':
+      return `${pick.label} — knocks ${scout.name} out in ${exchanges(s.killTicks)} vs ${exchanges(before.killTicks)} now, for ${lb(dW)}.`
+    case 'armor':
+      return `${pick.label} — survives ${exchanges(s.surviveTicks)} against a ${String(scout.weaponClass).replace(/_/g, ' ')} vs ${exchanges(before.surviveTicks)} now, for ${lb(dW)}.`
+    case 'drivetrain':
+      return `${pick.label} — ${s.mobility.toFixed(2)}× weapon accuracy and ${s.headroomLb.toFixed(0)} lb of budget headroom, for ${lb(dW)}.`
+    default:
+      return pick.label
+  }
 }
 
-export function proposeArmor(ctx) {
-  const armor = ctx.bot.modules.find((m) => m.role === 'armor')
-  if (!armor) return null
-  const target = ARMOR_THICKNESS + (ctx.scout.experienceBonusM || 0)
-  // satisfied only when both the material matches the scout counter AND the plate is thick enough
-  // use small epsilon for floating-point tolerance
-  if (armor.material === ctx.scout.counterArmor && armor.thickness >= target - 1e-10) return null
-  const memo = ctx.scout.memoryNote ? ` (memory: ${ctx.scout.memoryNote})` : ''
+// One specialist's turn: measure its whole axis against this opponent, then put
+// forward the single option it likes best. Returns null when nothing available
+// beats what is already fitted, on this agent's own terms.
+export function proposeFor(role, ctx, opponentBot) {
+  const objective = AGENT_OBJECTIVE[role]
+  if (!objective) return null
+
+  const { evaluated, pick, shortlist } = evaluateAxis(role, ctx, opponentBot)
+  if (!pick) return null
+
+  const before = scoreBuild(ctx.bot, opponentBot)
+  if (objective(pick.score) <= objective(before) + 1e-6) return null
+
   return {
-    edit: { type: 'setArmor', material: ctx.scout.counterArmor, thickness: target },
-    reasoning: `${ctx.scout.counterHint}: run ${ctx.scout.counterArmor} armor at ${Math.round(target * 1000)}mm.${memo}`,
+    role,
+    edit: pick.edit,
+    label: pick.label,
+    reasoning: reasonFor(role, pick, before, ctx.scout),
+    score: pick.score,
+    before,
+    shortlist: shortlist.map((c) => ({
+      label: c.label, preference: c.preference, margin: c.score.margin, weightLb: c.score.weightLb,
+    })),
+    evaluated: evaluated.map((c) => ({
+      label: c.label,
+      weightLb: c.score.weightLb,
+      margin: c.score.margin,
+      feasible: c.score.feasible,
+      picked: c.label === pick.label,
+    })),
   }
 }
 
-export function proposeDrivetrain(ctx) {
-  const want = '4wd' // control vs spinners; simple deterministic rule
-  if (ctx.bot.drivetrain === want) return null
-  return { edit: { type: 'setDrivetrain', drivetrain: want }, reasoning: '4WD for control and self-righting against spinners.' }
-}
-
-export function chiefArbitrate(bot, edit) {
-  let next = applyEdit(bot, edit)
-  if (!computeBot(next).overBudget) return { bot: next, accepted: true, note: 'in budget' }
-  // try trimming the chassis to reclaim weight
-  for (const factor of [0.9, 0.8, 0.7]) {
-    const trimmed = applyEdit(next, { type: 'scaleChassis', factor })
-    if (!computeBot(trimmed).overBudget) return { bot: trimmed, accepted: true, note: `trimmed chassis ×${factor} to fit budget` }
-  }
-  return { bot, accepted: false, note: 'over budget — rejected' }
-}

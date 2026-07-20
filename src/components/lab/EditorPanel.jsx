@@ -1,37 +1,82 @@
+import { Undo2, Redo2, RotateCcw } from 'lucide-react'
+import Help from '../ui/Help.jsx'
 import { MATERIALS } from '../../lib/domain/materials.js'
+import { getShape } from '../../lib/shapes/registry.js'
+import { shapesForRole } from '../../lib/editor/shapeSwap.js'
+import { formatParam, humanize, shapeLabel } from '../../lib/ui/format.js'
 
 const ROLE_ACCENT = {
   weapon: 'var(--magenta)',
   armor: 'var(--cyan)',
   drivetrain: 'var(--amber)',
   chassis: 'var(--lime)',
+  battery: 'var(--lime)',
 }
 
-function Slider({ label, value, min, max, step, onChange }) {
+// What each part is FOR, in the player's language. The raw role is an enum; this
+// is the sentence that tells a first-time user why they'd touch it.
+const ROLE_BLURB = {
+  chassis: 'Hull everything bolts to',
+  drivetrain: 'Wheels and push',
+  armor: 'Absorbs the hits',
+  weapon: 'Deals the damage',
+  battery: 'Stored energy',
+}
+
+// The mount axes named by what they do to the bot, not by their letter.
+const AXIS_MEANING = { x: 'front ⇢ back', y: 'down ⇢ up', z: 'left ⇢ right' }
+
+function Slider({ paramKey, label, value, min, max, step, onChange, accent }) {
   const pct = ((Number(value) - min) / (max - min)) * 100
+  const shown = formatParam(paramKey, value, step)
+  const lo = formatParam(paramKey, min, step)
+  const hi = formatParam(paramKey, max, step)
   return (
-    <label className="block">
-      <div className="flex justify-between items-baseline mono text-[11px] text-ink-2 mb-0.5">
-        <span className="text-[var(--ink-3)] uppercase tracking-wider">{label}</span>
-        <span className="text-[var(--cyan)] tnum">{Number(value).toFixed(3)}</span>
-      </div>
+    <label className="ed-field" style={{ '--accent': accent }}>
+      <span className="ed-field-top">
+        <span className="ed-field-label">{label}</span>
+        <span className="ed-field-value">
+          {shown.value}
+          {shown.unit && <em>{shown.unit}</em>}
+        </span>
+      </span>
       <input
         type="range" min={min} max={max} step={step} value={value}
+        aria-label={label}
         onChange={(e) => onChange(Number(e.target.value))}
         className="slider"
         style={{ '--val': `${pct}%` }}
       />
+      <span className="ed-field-scale" aria-hidden>
+        <span>{lo.value}</span>
+        <span>{hi.value}{hi.unit && ` ${hi.unit}`}</span>
+      </span>
     </label>
   )
 }
 
-export default function EditorPanel({ bot, selectedId, dispatch }) {
+export default function EditorPanel({ bot, selectedId, dispatch, canUndo, canRedo, onReset }) {
   const selected = bot.modules.find((m) => m.id === selectedId)
   const accent = selected ? ROLE_ACCENT[selected.role] || 'var(--amber)' : 'var(--amber)'
+  const shapeOptions = selected ? shapesForRole(selected.role) : []
+
   return (
-    <div className="p-4 space-y-5">
-      <div className="space-y-2">
-        <div className="panel-hd">Modules</div>
+    <div className="p-4 space-y-4">
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="panel-hd">Parts bench</div>
+            <Help text="Pick a part to tune it. Every change re-runs the weight and damage model instantly." />
+          </div>
+          <div className="ed-history">
+            <button type="button" className="ed-hbtn" title="Undo (⌘Z)" aria-label="Undo"
+              disabled={!canUndo} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={13} strokeWidth={1.9} /></button>
+            <button type="button" className="ed-hbtn" title="Redo (⇧⌘Z)" aria-label="Redo"
+              disabled={!canRedo} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={13} strokeWidth={1.9} /></button>
+            <button type="button" className="ed-hbtn" title="Start over from the default build" aria-label="Reset build"
+              onClick={onReset}><RotateCcw size={13} strokeWidth={1.9} /></button>
+          </div>
+        </div>
         <div className="space-y-1.5">
           {bot.modules.map((m) => {
             const active = m.id === selectedId
@@ -40,18 +85,14 @@ export default function EditorPanel({ bot, selectedId, dispatch }) {
               <button
                 key={m.id}
                 onClick={() => dispatch({ type: 'select', id: m.id })}
-                className="group flex items-center gap-2.5 w-full text-left px-2.5 py-2.5 rounded-[11px] border transition-all duration-150"
-                style={{
-                  borderColor: active ? 'rgba(255,255,255,0.09)' : 'var(--line)',
-                  background: active ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.012))' : 'transparent',
-                  backdropFilter: active ? 'blur(10px) saturate(150%)' : 'none',
-                  WebkitBackdropFilter: active ? 'blur(10px) saturate(150%)' : 'none',
-                  boxShadow: active ? `inset 3px 0 0 ${a}, inset 0 1px 0 rgba(255,255,255,0.11), 0 0 18px -10px ${a}` : 'none',
-                }}
+                className="ed-part"
+                data-active={active || undefined}
+                style={{ '--accent': a }}
               >
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: a, boxShadow: `0 0 8px ${a}` }} />
-                <span className="font-ui font-bold text-[12px] uppercase tracking-wide" style={{ color: active ? 'var(--ink)' : 'var(--ink-2)' }}>{m.role}</span>
-                <span className="mono text-[10px] text-[var(--ink-3)] ml-auto">{m.id}</span>
+                <span className="ed-part-dot" aria-hidden />
+                <span className="ed-part-name min-w-0">{humanize(m.id)}</span>
+                <Help text={ROLE_BLURB[m.role] || shapeLabel(m.shape)} />
+                <span className="ed-part-shape">{shapeLabel(m.shape)}</span>
               </button>
             )
           })}
@@ -59,38 +100,31 @@ export default function EditorPanel({ bot, selectedId, dispatch }) {
       </div>
 
       {selected && (
-        <div className="panel panel-clip p-4 space-y-3 anim-rise" style={{ '--accent': accent }}>
-          <div className="panel-hd" style={{ '--accent': accent }}>{selected.role} · {selected.id}</div>
+        <div className="panel panel-clip p-4 space-y-4 anim-rise" style={{ '--accent': accent }}>
+          <div className="panel-hd" style={{ '--accent': accent }}>Tune · {humanize(selected.role)}</div>
 
-          {selected.shape === 'box' && ['x', 'y', 'z'].map((k) => (
-            <Slider key={k} label={`size ${k}`} value={selected.params[k]} min={0.02} max={1} step={0.005}
-              onChange={(v) => dispatch({ type: 'setParam', id: selected.id, key: k, value: v })} />
-          ))}
-          {selected.shape === 'cylinder' && (
-            <>
-              <Slider label="radius" value={selected.params.radius} min={0.02} max={0.4} step={0.005}
-                onChange={(v) => dispatch({ type: 'setParam', id: selected.id, key: 'radius', value: v })} />
-              <Slider label="length" value={selected.params.length} min={0.02} max={0.6} step={0.005}
-                onChange={(v) => dispatch({ type: 'setParam', id: selected.id, key: 'length', value: v })} />
-            </>
+          {/* Reshape. The registry has ten shapes; before this the editor could
+              only ever show the one the seed happened to pick. */}
+          {shapeOptions.length > 1 && (
+            <label className="ed-group">
+              <span className="ed-group-label ed-group-label-row">
+                Shape
+                <Help text={getShape(selected.shape).description} />
+              </span>
+              <select
+                value={selected.shape}
+                onChange={(e) => dispatch({ type: 'setShape', id: selected.id, shape: e.target.value })}
+                className="select-hud w-full"
+              >
+                {shapeOptions.map((name) => (
+                  <option key={name} value={name}>{shapeLabel(name)}</option>
+                ))}
+              </select>
+            </label>
           )}
 
-          <div className="pt-1 border-t border-[var(--line)] space-y-3">
-            {['x', 'y', 'z'].map((axis) => (
-              <Slider key={`m${axis}`} label={`mount ${axis}`} value={selected.mountPoint[axis]} min={-0.6} max={0.6} step={0.01}
-                onChange={(v) => dispatch({ type: 'setMount', id: selected.id, axis, value: v })} />
-            ))}
-          </div>
-
-          {selected.role === 'weapon' && (
-            <div className="pt-1 border-t border-[var(--line)]">
-              <Slider label="rpm" value={selected.rpm} min={0} max={5000} step={50}
-                onChange={(v) => dispatch({ type: 'setRpm', id: selected.id, value: v })} />
-            </div>
-          )}
-
-          <label className="block pt-1 border-t border-[var(--line)]">
-            <span className="mono text-[11px] text-[var(--ink-3)] uppercase tracking-wider block mb-1.5">material</span>
+          <label className="ed-group">
+            <span className="ed-group-label">Material</span>
             <select
               value={selected.material}
               onChange={(e) => dispatch({ type: 'setMaterial', id: selected.id, material: e.target.value })}
@@ -101,6 +135,33 @@ export default function EditorPanel({ bot, selectedId, dispatch }) {
               ))}
             </select>
           </label>
+
+          <div className="ed-group">
+            <span className="ed-group-label">Geometry</span>
+            {getShape(selected.shape).editorFields.map((f) => (
+              <Slider key={f.key} paramKey={f.key} label={f.label} value={selected.params[f.key]}
+                min={f.min} max={f.max} step={f.step} accent={accent}
+                onChange={(v) => dispatch({ type: 'setParam', id: selected.id, key: f.key, value: v })} />
+            ))}
+          </div>
+
+          <div className="ed-group">
+            <span className="ed-group-label">Mount point</span>
+            {['x', 'y', 'z'].map((axis) => (
+              <Slider key={`m${axis}`} paramKey={`mount_${axis}`} label={AXIS_MEANING[axis]}
+                value={selected.mountPoint[axis]} min={-0.6} max={0.6} step={0.01} accent={accent}
+                onChange={(v) => dispatch({ type: 'setMount', id: selected.id, axis, value: v })} />
+            ))}
+          </div>
+
+          {selected.role === 'weapon' && (
+            <div className="ed-group">
+              <span className="ed-group-label">Spin-up</span>
+              <Slider paramKey="rpm" label="tip speed" value={selected.rpm} min={0} max={5000} step={50} accent={accent}
+                onChange={(v) => dispatch({ type: 'setRpm', id: selected.id, value: v })} />
+            </div>
+          )}
+
         </div>
       )}
     </div>

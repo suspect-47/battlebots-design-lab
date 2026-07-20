@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { opponentBotFromRecord } from './opponentBot.js'
 import { validateBot } from '../domain/botSchema.js'
 import { computeBot } from '../domain/computeBot.js'
+import { shapeNames } from '../shapes/registry.js'
 
 const CLASSES = ['vertical_spinner', 'horizontal_spinner', 'drum', 'hammer', 'flipper', 'lifter', 'crusher', 'other']
 
@@ -26,9 +27,22 @@ describe('opponentBotFromRecord', () => {
     const flipper = opponentBotFromRecord({ name: 'b', weapon: 'flipper', wins: 1, losses: 1 })
     const wSpin = spinner.modules.find((m) => m.role === 'weapon')
     const wFlip = flipper.modules.find((m) => m.role === 'weapon')
-    expect(wSpin.shape).toBe('cylinder')
-    expect(wFlip.shape).toBe('box')
+    // Each class uses the shape that matches its real hardware, so the two are
+    // never the same primitive wearing different numbers.
+    expect(wSpin.shape).toBe('drum')
+    expect(wFlip.shape).toBe('flipper')
     expect(wSpin.rpm).toBeGreaterThan(wFlip.rpm) // spinners spin far faster than flippers
+  })
+
+  it('every weapon class maps to a registered shape, and no two classes share a silhouette', () => {
+    const classes = ['vertical_spinner', 'horizontal_spinner', 'drum', 'hammer', 'flipper', 'lifter', 'crusher', 'other']
+    const shapes = classes.map((weapon) => {
+      const bot = opponentBotFromRecord({ name: weapon, weapon, wins: 1, losses: 1 })
+      return bot.modules.find((m) => m.role === 'weapon').shape
+    })
+    for (const s of shapes) expect(shapeNames()).toContain(s)
+    // A bar spinner must not render as the same object as a drum.
+    expect(shapes[1]).not.toBe(shapes[2])
   })
 
   it('a lethal KO record yields a deadlier weapon than a soft record (same class)', () => {

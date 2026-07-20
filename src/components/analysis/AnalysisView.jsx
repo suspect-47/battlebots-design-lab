@@ -8,6 +8,7 @@ import FeaturedFights from './FeaturedFights.jsx'
 import { weaponClassMeta } from '../../lib/analysis/weaponMeta.js'
 import { topBots } from '../../lib/analysis/leaderboard.js'
 import { loadMeta, loadRoster } from '../../lib/analysis/dataSource.js'
+import { titleCase } from '../../lib/ui/format.js'
 import committedAggregates from '../../data/aggregates.json'
 import committedRoster from '../../data/bots.json'
 
@@ -58,7 +59,10 @@ export default function AnalysisView({ memory }) {
     <div className="h-full overflow-y-auto">
       {/* dashboard header */}
       <div className="px-8 pt-6 pb-4 flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="display text-[34px] text-[var(--ink)]">The Meta Intelligence</h1>
+        <div>
+          <div className="eyebrow" style={{ color: 'var(--lime)' }}>Scout report / the field is moving</div>
+          <h1 className="display text-[34px] text-[var(--ink)] mt-1">Know what beats what.</h1>
+        </div>
         <div className="flex items-center gap-7">
           <span className="mono text-[10px] tracking-[0.14em] uppercase text-[var(--ink-3)] hidden sm:inline">
             Powered by <span style={{ color: 'var(--lime)' }}>Bright Data</span>
@@ -71,7 +75,9 @@ export default function AnalysisView({ memory }) {
         </div>
       </div>
 
-      <div className="px-8 pb-8 space-y-6 stagger">
+      {/* pb-24 keeps the last panel clear of the floating assistant, which used
+          to sit on top of the bottom-right chart */}
+      <div className="px-8 pb-24 space-y-6 stagger">
         {/* featured fights — hero row, top 3 */}
         <Panel accent="var(--magenta)"><FeaturedFights roster={roster} limit={3} /></Panel>
 
@@ -79,8 +85,8 @@ export default function AnalysisView({ memory }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatTile label="Bots Tracked" value={totalBots} accent="var(--cyan)" />
           <StatTile label="Weapon Classes" value={meta.length} accent="var(--lime)" />
-          {dominant && <StatTile label="Most Dominant" value={`${Math.round(dominant.winRate * 100)}%`} sub={`${dominant.weaponClass.replace(/_/g, ' ')} · win rate`} accent="var(--amber)" />}
-          {deadliest && <StatTile label="Deadliest" value={`${Math.round(deadliest.koRate * 100)}%`} sub={`${deadliest.weaponClass.replace(/_/g, ' ')} · KO rate`} accent="var(--magenta)" />}
+          {dominant && <StatTile label="Highest Win Rate" value={`${Math.round(dominant.winRate * 100)}%`} sub={titleCase(dominant.weaponClass)} accent="var(--amber)" />}
+          {deadliest && <StatTile label="Highest KO Rate" value={`${Math.round(deadliest.koRate * 100)}%`} sub={titleCase(deadliest.weaponClass)} accent="var(--magenta)" />}
         </div>
 
         {/* charts */}
@@ -89,13 +95,17 @@ export default function AnalysisView({ memory }) {
           <Panel accent="var(--cyan)"><ThreatDumbbell rows={meta} /></Panel>
         </div>
 
-        {/* left: composition + counters stacked = right: leaderboard height */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          <div className="flex flex-col gap-6">
-            <Panel accent="var(--lime)"><FieldComposition rows={meta} /></Panel>
-            <Panel accent="var(--amber)" className="flex-1"><CounterPanel rows={meta} /></Panel>
+        {/* Composition and the leaderboard are both "who is out there" — they
+            pair. The counter cards answer "so what do I do about it", and they
+            live in the left column under the donut: the donut is short and the
+            leaderboard is ten rows tall, so that slot was a panel-sized void.
+            The counter panel collapses so it can never overshoot it. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6 min-h-0">
+            <Panel accent="var(--lime)"><FieldComposition rows={meta} rosterCount={roster.length} /></Panel>
+            <Panel accent="var(--amber)" className="cb-panel"><CounterPanel rows={meta} /></Panel>
           </div>
-          <Panel accent="var(--cyan)" className="h-full"><Leaderboard rows={leaders} /></Panel>
+          <Panel accent="var(--cyan)"><Leaderboard rows={leaders} /></Panel>
         </div>
       </div>
     </div>

@@ -1,59 +1,118 @@
+import { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid } from '@react-three/drei'
+import { OrbitControls, Grid, ContactShadows } from '@react-three/drei'
 import { botToMeshes } from '../../lib/scene/botToMeshes.js'
+import CadPart from '../scene/CadPart.jsx'
 
-function ModuleMesh({ d, selected, onSelect }) {
+const SELECT = '#1fe3e8'
+const EDGE = '#20303d'
+
+function ModuleMesh({ d, selected, hovered, onSelect, onHover }) {
   return (
-    <mesh
+    <group
       position={d.position}
       onClick={(e) => { e.stopPropagation(); onSelect(d.id) }}
+      onPointerOver={(e) => { e.stopPropagation(); onHover(d.id) }}
+      onPointerOut={(e) => { e.stopPropagation(); onHover(null) }}
     >
-      {d.geometry === 'box'
-        ? <boxGeometry args={d.args} />
-        : <cylinderGeometry args={d.args} />}
-      <meshStandardMaterial
-        color={d.color}
-        emissive={selected ? '#1fe3e8' : '#000000'}
-        emissiveIntensity={selected ? 0.6 : 0}
-        metalness={0.65}
-        roughness={0.35}
-      />
-    </mesh>
+      {d.parts.map((part, i) => (
+        <CadPart
+          key={i}
+          geometry={part.geometry}
+          args={part.args}
+          position={part.position}
+          rotation={part.rotation}
+          color={d.color}
+          // selection and hover are carried by the outline, not by making the
+          // whole part glow — the material colour has to keep meaning "metal"
+          edgeColor={selected ? SELECT : hovered ? '#8fa6b6' : EDGE}
+        />
+      ))}
+    </group>
   )
 }
 
 export default function BotScene({ bot, cg, selectedId, onSelect }) {
   const meshes = botToMeshes(bot)
+  const [hoveredId, setHoveredId] = useState(null)
+
   return (
     <div className="relative h-full w-full">
       {/* viewport HUD overlay */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
-        <div className="eyebrow">Parametric CAD</div>
-        <div className="mono text-[10px] text-[var(--ink-3)] mt-0.5">3D VIEWPORT · drag to orbit · click a module</div>
+        <div className="eyebrow">Live preview</div>
       </div>
-      <div className="absolute bottom-4 right-4 z-10 pointer-events-none flex items-center gap-2">
+      <div className="absolute top-4 right-4 z-10 pointer-events-none flex items-center gap-2">
         <span className="w-2 h-2 rounded-full" style={{ background: 'var(--amber)', boxShadow: '0 0 8px var(--amber)' }} />
-        <span className="mono text-[10px] text-[var(--ink-3)]">center of gravity</span>
+        <span className="mono text-[10px] text-[var(--ink-3)]">Center of gravity</span>
       </div>
 
-      <Canvas camera={{ position: [1.2, 0.9, 1.2], fov: 50 }} style={{ height: '100%', width: '100%' }}>
+      {/* A 250 lb bot is ~0.6 m across. The old camera sat far enough back to fit
+          a three-metre object, so the part being edited occupied a fifth of the
+          viewport with dead grid all around it. */}
+      <Canvas shadows camera={{ position: [1.02, 0.66, 1.02], fov: 42 }} style={{ height: '100%', width: '100%' }}>
         <color attach="background" args={['#08090d']} />
         <fog attach="fog" args={['#08090d', 3, 9]} />
-        <ambientLight intensity={0.45} />
-        <directionalLight position={[3, 5, 2]} intensity={1.1} />
-        <pointLight position={[-3, 2, -2]} intensity={0.6} color="#1fe3e8" />
-        <pointLight position={[2, 1, -3]} intensity={0.4} color="#ff2e6e" />
-        <Grid args={[10, 10]} cellColor="#161b24" sectionColor="#1fe3e8" fadeDistance={9} fadeStrength={1.5} infiniteGrid position={[0, -0.2, 0]} />
+        {/* one hard key light plus weak fill, so parts cast real shadows on each
+            other and the form is readable */}
+        <ambientLight intensity={0.28} />
+        <hemisphereLight args={['#9fb4c4', '#0a0a12', 0.35]} />
+        <directionalLight
+          position={[1.6, 2.6, 1.2]}
+          intensity={2.2}
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-1.2}
+          shadow-camera-right={1.2}
+          shadow-camera-top={1.2}
+          shadow-camera-bottom={-1.2}
+          shadow-camera-near={0.1}
+          shadow-camera-far={8}
+          shadow-bias={-0.0005}
+        />
+        <pointLight position={[-3, 2, -2]} intensity={0.5} color="#1fe3e8" />
+        <pointLight position={[2, 1, -3]} intensity={0.35} color="#ff2e6e" />
+
+        {/* measured grid: 10 cm minor, 50 cm major, muted to read as drafting
+            paper rather than neon */}
+        <Grid
+          args={[10, 10]}
+          cellSize={0.1}
+          cellColor="#1b2430"
+          sectionSize={0.5}
+          sectionColor="#33566a"
+          fadeDistance={9}
+          fadeStrength={1.5}
+          infiniteGrid
+          position={[0, -0.2, 0]}
+        />
+        {/* sits just under the wheels, not down at the grid — a contact shadow
+            cast onto empty space 6 cm below the bot reads as no shadow at all */}
+        <ContactShadows position={[0, -0.142, 0]} opacity={0.7} scale={2.4} blur={1.6} far={0.6} resolution={1024} />
+
         {meshes.map((d) => (
-          <ModuleMesh key={d.id} d={d} selected={d.id === selectedId} onSelect={onSelect} />
+          <ModuleMesh
+            key={d.id}
+            d={d}
+            selected={d.id === selectedId}
+            hovered={d.id === hoveredId}
+            onSelect={onSelect}
+            onHover={setHoveredId}
+          />
         ))}
+
         {cg && (
           <mesh position={cg}>
             <sphereGeometry args={[0.03, 16, 16]} />
             <meshBasicMaterial color="#ffab12" />
           </mesh>
         )}
-        <OrbitControls makeDefault />
+        {/* bounded so a stray scroll can neither bury the camera inside the
+            chassis nor fling it out past the fog */}
+        {/* Target sits slightly forward of the chassis origin: the weapon hangs
+            off the nose, so orbiting around 0,0,0 pushed the whole bot into the
+            right of the frame and left the left third empty. */}
+        <OrbitControls makeDefault target={[0.08, -0.03, 0]} minDistance={0.45} maxDistance={2.6} maxPolarAngle={Math.PI * 0.495} enablePan={false} />
       </Canvas>
     </div>
   )

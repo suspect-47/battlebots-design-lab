@@ -1,15 +1,18 @@
+import { titleCase } from '../../../lib/ui/format.js'
+
 const TIER = { S: 'var(--amber)', A: 'var(--cyan)', B: 'var(--lime)', C: 'var(--ink-2)', D: 'var(--magenta)' }
-const SHORT = { vertical_spinner: 'vert spinner', horizontal_spinner: 'horiz spinner' }
-const name = (wc) => SHORT[wc] || wc.replace(/_/g, ' ')
+const SHORT = { vertical_spinner: 'Vert spinner', horizontal_spinner: 'Horiz spinner' }
+const name = (wc) => SHORT[wc] || titleCase(wc)
 
 // Field composition as a donut: each arc = a weapon class's share of the field,
 // colored by performance tier. Reading the shape shows the popularity↔tier
 // mismatch (one big A-tier arc, slivers of S-tier) that win-rate charts can't.
-export default function FieldComposition({ rows }) {
+export default function FieldComposition({ rows, rosterCount }) {
   const data = rows
     .filter((r) => r.weaponClass !== 'other')
     .sort((a, b) => b.botCount - a.botCount)
   const total = data.reduce((s, r) => s + r.botCount, 0)
+  const unclassified = Number.isFinite(rosterCount) ? Math.max(0, rosterCount - total) : 0
 
   // donut geometry
   const R = 78, SW = 26, C = 2 * Math.PI * R, GAP = 3
@@ -31,6 +34,11 @@ export default function FieldComposition({ rows }) {
         <div className="panel-hd" style={{ '--accent': 'var(--lime)' }}>Field Composition</div>
         <div className="mono text-[10px] text-[var(--ink-3)]">Color = Tier</div>
       </div>
+      {unclassified > 0 && (
+        <p className="workspace-note mt-2">
+          {total} of {rosterCount} tracked bots have a known weapon class; {unclassified} {unclassified === 1 ? 'is' : 'are'} unclassified and left off the chart.
+        </p>
+      )}
 
       <div className="flex items-center gap-6 mt-4 flex-wrap">
         {/* donut */}
@@ -44,7 +52,12 @@ export default function FieldComposition({ rows }) {
             </circle>
           ))}
           <text x="100" y="98" textAnchor="middle" className="display" fill="var(--ink)" fontSize="38">{total}</text>
-          <text x="100" y="118" textAnchor="middle" className="display" fill="var(--ink-2)" fontSize="15" letterSpacing="3">BOTS</text>
+          {/* The donut only charts bots whose class is known. Saying "BOTS" here
+              contradicted the "Bots tracked" tile above by exactly the number of
+              unclassified entries. */}
+          <text x="100" y="117" textAnchor="middle" className="display" fill="var(--ink-2)" fontSize="13" letterSpacing="2.5">
+            {unclassified > 0 ? `OF ${rosterCount}` : 'BOTS'}
+          </text>
         </svg>
 
         {/* legend / breakdown */}

@@ -10,6 +10,7 @@ import OpponentPicker from './components/arena/OpponentPicker.jsx'
 import AgentDesignView from './components/design/AgentDesignView.jsx'
 import AnalysisView from './components/analysis/AnalysisView.jsx'
 import TabNav from './components/shell/TabNav.jsx'
+import ErrorBoundary from './components/shell/ErrorBoundary.jsx'
 import ChatWidget from './components/chat/ChatWidget.jsx'
 import { editorReducer } from './lib/editor/editorReducer.js'
 import { defaultBot } from './lib/scene/defaultBot.js'
@@ -19,6 +20,7 @@ import { opponentBotFromRecord } from './lib/sim/opponentBot.js'
 import { loadMemory, saveMemory } from './lib/memory/memoryStorage.js'
 import { recordFromDesign } from './lib/memory/recordFromDesign.js'
 import { getFightVerdict } from './lib/verdict/verdictBridge.js'
+import { titleCase } from './lib/ui/format.js'
 import roster from './data/bots.json'
 
 const TABS = [
@@ -59,7 +61,7 @@ function GlassPanel({ children, frosted = true, scroll = false }) {
 }
 
 export default function App() {
-  const [state, dispatch] = useReducer(editorReducer, null, () => ({ bot: defaultBot(), selectedId: 'weapon' }))
+  const [state, dispatch] = useReducer(editorReducer, null, () => ({ bot: defaultBot(), selectedId: 'weapon', past: [], future: [] }))
   const [mode, setMode] = useState('build')
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [matchStatus, setMatchStatus] = useState('fighting')
@@ -68,7 +70,7 @@ export default function App() {
   const [hp, setHp] = useState({ player: 1, opponent: 1 })
   const [verdict, setVerdict] = useState(null)
   const [memory, setMemory] = useState(() => loadMemory())
-  const { bot, selectedId } = state
+  const { bot, selectedId, past = [], future = [] } = state
 
   const opponentRecord = useMemo(() => roster.find((b) => b.name === opponentName) || roster[0], [opponentName])
   const profile = useMemo(() => (opponentRecord ? opponentProfile(opponentRecord) : null), [opponentRecord])
@@ -117,13 +119,34 @@ export default function App() {
     })
   }
 
+  // Undo/redo as muscle memory, not just as buttons. Scoped to the build view so
+  // ⌘Z never fights the browser while the user is typing to Freya or scrubbing
+  // the studio transport.
+  useEffect(() => {
+    if (mode !== 'build') return
+    function onKey(e) {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {
+        if (el.type !== 'range') return
+      }
+      e.preventDefault()
+      dispatch({ type: e.shiftKey ? 'redo' : 'undo' })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mode])
+
   const showOpponent = mode === 'build' || mode === 'fight'
 
   return (
-    <div className="min-h-full flex flex-col">
+    // h-full, not min-h-full: flex-1 on the view below only resolves against a
+    // definite height, and without it the Agents panel stopped at its content
+    // and left half the window empty.
+    <div className="h-full flex flex-col">
       <header className="sticky top-0 z-40 px-4 pt-3">
         <div
-          className="relative flex items-center gap-8 px-6 h-[62px] rounded-2xl"
+          className="app-header px-6 h-[62px] rounded-2xl"
           style={{
             background: 'linear-gradient(180deg, var(--surface-2), var(--surface))',
             backdropFilter: 'blur(20px) saturate(165%)',
@@ -132,20 +155,23 @@ export default function App() {
           }}
         >
           {/* wordmark */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="w-2.5 h-7 hazard rounded-[1px]" aria-hidden />
+          <div className="brand flex items-center gap-2 shrink-0">
+            <span className="brand-mark w-2.5 h-7 hazard rounded-[1px]" aria-hidden />
             <div className="leading-[0.82]">
-              <div className="display text-[20px] text-[var(--ink)] glow-cyan">BATTLEBOTS</div>
+              <div className="display text-[20px] text-[var(--ink)] glow-cyan">BULLBOTS</div>
               <div className="mono text-[9px] tracking-[0.42em]" style={{ color: 'var(--amber)' }}>DESIGN&nbsp;LAB</div>
             </div>
           </div>
 
-          {/* nav centered in header */}
-          <div className="absolute left-1/2 -translate-x-1/2">
+          {/* Centered by the grid's middle column, not by absolute positioning:
+              an absolutely-centered nav has no width in the flow, so the tabs
+              slid under the opponent picker as soon as the Arena added its two
+              extra buttons. */}
+          <div className="app-nav">
             <TabNav tabs={TABS} value={mode} onChange={goTo} />
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="header-actions flex items-center gap-3">
             {showOpponent && (
               <div className="flex items-center gap-2 anim-fade">
                 <span className="eyebrow">Opponent</span>
@@ -168,11 +194,18 @@ export default function App() {
       </header>
 
       {/* keyed on mode so each view plays its entrance animation on switch */}
-      <div key={mode} className="flex-1 min-h-0 flex flex-col anim-fade">
+      <ErrorBoundary key={mode} label={`the ${mode} view`}>
+      <div className="flex-1 min-h-0 flex flex-col anim-fade">
         {mode === 'build' && (
-          <main className="flex-1 grid grid-cols-[280px_1fr_280px] min-h-0">
+          <main className="build-main flex-1 grid grid-cols-[280px_1fr_280px] min-h-0">
             <aside className="min-h-0 relative p-2 anim-rise">
-              <GlassPanel frosted scroll><EditorPanel bot={bot} selectedId={selectedId} dispatch={dispatch} /></GlassPanel>
+              <GlassPanel frosted scroll>
+                <EditorPanel
+                  bot={bot} selectedId={selectedId} dispatch={dispatch}
+                  canUndo={past.length > 0} canRedo={future.length > 0}
+                  onReset={() => dispatch({ type: 'reset', bot: defaultBot() })}
+                />
+              </GlassPanel>
             </aside>
             <section className="min-h-0 relative p-2">
               <GlassPanel frosted={false}>
@@ -195,9 +228,15 @@ export default function App() {
                   <Arena key={matchKey} playerBot={bot} opponentBot={opponentBot} manual={manual} running={matchStatus === 'fighting'}
                     opponentAggression={profile?.aggression ?? 0.6} onMatchEnd={setMatchStatus} onStats={setHp} />
                 </div>
+                {/* broadcast reticle: corner brackets + scanline sheen */}
+                <div className="fh-scan" aria-hidden />
+                <div className="fh-frame" aria-hidden>
+                  <span className="fh-corner tl" /><span className="fh-corner tr" />
+                  <span className="fh-corner bl" /><span className="fh-corner br" />
+                </div>
                 {/* overlay: HUD top, sim-model bottom-left, verdict bottom-center */}
                 <div className="absolute inset-0 z-30 pointer-events-none flex flex-col justify-between">
-                  <ArenaHud status={matchStatus} playerName={bot.name} opponentName={profile?.name} opponentClass={profile?.weaponClass}
+                  <ArenaHud status={matchStatus} playerName={bot.name} opponentName={profile?.name} opponentClass={titleCase(profile?.weaponClass)}
                     opponentImage={opponentRecord?.cartoonUrl || opponentRecord?.imageUrl} hp={hp} manual={manual} onStart={beginFight} />
                   <div className="p-4 flex items-end justify-between gap-4">
                     <SimModel playerBot={bot} opponentBot={opponentBot} opponentName={profile?.name} />
@@ -214,7 +253,9 @@ export default function App() {
 
         {mode === 'design' && (
           <main className="flex-1 min-h-0 p-2">
-            <GlassPanel frosted><AgentDesignView memory={memory} onRemember={rememberDesign} onLoadIntoLab={loadIntoLab} /></GlassPanel>
+            {/* labBot: the studio starts its search from whatever is open in the
+                editor, so it returns changes to the user's own build */}
+            <GlassPanel frosted><AgentDesignView memory={memory} onRemember={rememberDesign} onLoadIntoLab={loadIntoLab} labBot={bot} /></GlassPanel>
           </main>
         )}
 
@@ -224,6 +265,7 @@ export default function App() {
           </main>
         )}
       </div>
+      </ErrorBoundary>
 
       <ChatWidget />
     </div>

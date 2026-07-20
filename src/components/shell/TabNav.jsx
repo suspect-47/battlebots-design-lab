@@ -8,11 +8,20 @@ export default function TabNav({ tabs, value, onChange }) {
   const refs = useRef({})
   const [ind, setInd] = useState({ left: 0, width: 0, color: 'var(--cyan)' })
 
+  // Recomputed on resize as well as on selection: the tabs shrink at narrow
+  // widths, and an indicator measured at the old size sits under the wrong tab.
   useLayoutEffect(() => {
-    const el = refs.current[value]
-    if (!el) return
-    const active = tabs.find((t) => t.id === value)
-    setInd({ left: el.offsetLeft, width: el.offsetWidth, color: active?.accent || 'var(--cyan)' })
+    function measure() {
+      const el = refs.current[value]
+      if (!el) return
+      const active = tabs.find((t) => t.id === value)
+      setInd({ left: el.offsetLeft, width: el.offsetWidth, color: active?.accent || 'var(--cyan)' })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    Object.values(refs.current).forEach((el) => el && ro.observe(el))
+    window.addEventListener('resize', measure)
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure) }
   }, [value, tabs])
 
   return (

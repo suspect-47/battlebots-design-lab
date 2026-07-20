@@ -9,18 +9,25 @@ const bot = {
 }
 
 describe('botToMeshes', () => {
-  it('maps a box module to boxGeometry args [x,y,z] at its mountPoint', () => {
+  it('places a module at its mountPoint', () => {
     const d = botToMeshes(bot).find((m) => m.id === 'c')
-    expect(d.geometry).toBe('box')
-    expect(d.args).toEqual([0.5, 0.1, 0.4])
     expect(d.position).toEqual([0, 0, 0])
+    expect(botToMeshes(bot).find((m) => m.id === 'w').position).toEqual([0.3, 0.02, 0])
   })
 
-  it('maps a cylinder to [r, r, length, 24] at its mountPoint', () => {
+  it('emits a box part with args [x,y,z] local to the module', () => {
+    const d = botToMeshes(bot).find((m) => m.id === 'c')
+    expect(d.parts).toHaveLength(1)
+    expect(d.parts[0].geometry).toBe('box')
+    expect(d.parts[0].args).toEqual([0.5, 0.1, 0.4])
+    expect(d.parts[0].position).toEqual([0, 0, 0])
+  })
+
+  it('emits a cylinder part with args [r, r, length, 24]', () => {
     const d = botToMeshes(bot).find((m) => m.id === 'w')
-    expect(d.geometry).toBe('cylinder')
-    expect(d.args).toEqual([0.15, 0.15, 0.1, 24])
-    expect(d.position).toEqual([0.3, 0.02, 0])
+    expect(d.parts).toHaveLength(1)
+    expect(d.parts[0].geometry).toBe('cylinder')
+    expect(d.parts[0].args).toEqual([0.15, 0.15, 0.1, 24])
   })
 
   it('assigns a color per material', () => {
@@ -29,8 +36,10 @@ describe('botToMeshes', () => {
     expect(meshes[0].color).not.toBe(meshes.find((m) => m.id === 'w').color) // ti vs steel differ
   })
 
-  it('returns one descriptor per module, preserving ids', () => {
-    expect(botToMeshes(bot).map((m) => m.id)).toEqual(['c', 'w'])
+  it('returns one descriptor per module, preserving ids and roles', () => {
+    const meshes = botToMeshes(bot)
+    expect(meshes.map((m) => m.id)).toEqual(['c', 'w'])
+    expect(meshes.map((m) => m.role)).toEqual(['chassis', 'weapon'])
   })
 
   it('throws on an unknown shape', () => {

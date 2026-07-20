@@ -1,5 +1,6 @@
 import { moduleMass } from './geometry.js'
 import { moduleInertiaYaw } from './inertia.js'
+import { getShape } from '../shapes/registry.js'
 import { ENERGY_TRANSFER, RESTITUTION } from './physics-constants.js'
 
 export function rpmToOmega(rpm) {
@@ -13,10 +14,7 @@ export function weaponKineticEnergy(weaponModule, rpm) {
 }
 
 function tipRadius(weaponModule) {
-  const p = weaponModule.params
-  if (weaponModule.shape === 'cylinder') return p.radius
-  if (weaponModule.shape === 'box') return p.x / 2
-  throw new Error(`unknown shape: ${weaponModule.shape}`)
+  return getShape(weaponModule.shape).tipRadius(weaponModule.params)
 }
 
 export function impactImpulse(weaponModule, rpm) {

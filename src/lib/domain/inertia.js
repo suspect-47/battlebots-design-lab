@@ -1,11 +1,8 @@
 import { moduleMass } from './geometry.js'
+import { getShape } from '../shapes/registry.js'
 
 export function moduleInertiaYaw(module) {
-  const m = moduleMass(module)
-  const p = module.params
-  if (module.shape === 'box') return (m / 12) * (p.x * p.x + p.z * p.z)
-  if (module.shape === 'cylinder') return 0.5 * m * p.radius * p.radius
-  throw new Error(`unknown shape: ${module.shape}`)
+  return getShape(module.shape).inertiaYaw(module.params, moduleMass(module))
 }
 
 export function botInertiaYaw(modules, cg) {

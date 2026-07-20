@@ -11,8 +11,8 @@ export default {
         lime: { hot: '#46e88a' },
       },
       fontFamily: {
-        display: ['Anton', 'Archivo', 'sans-serif'],
-        ui: ['Antic Slab', 'Archivo', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Anton', 'Inter Tight', 'sans-serif'],
+        ui: ['Inter Tight', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SF Mono', 'Menlo', 'monospace'],
       },
     },

@@ -1,5 +1,11 @@
-// Pure mapping: parametric bot modules -> three.js primitive descriptors.
-// Descriptors are plain data; the R3F layer renders them. No three imports here.
+// Pure mapping: parametric bot modules -> render descriptors. Descriptors are plain
+// data; the R3F layer renders them. No three imports here.
+//
+// A module maps to ONE wrapper positioned at its mountPoint, containing one or more
+// `parts` in the module's local frame. Multi-part output is what lets a shape render
+// as real hardware (a wheel as tire + hub + spokes) instead of one primitive.
+import { getShape } from '../shapes/registry.js'
+
 export const MATERIAL_COLORS = {
   titanium: '#9fb4c4',
   ar500_steel: '#5b6672',
@@ -8,15 +14,12 @@ export const MATERIAL_COLORS = {
 }
 
 export function botToMeshes(bot) {
-  return bot.modules.map((m) => {
-    const color = MATERIAL_COLORS[m.material] || '#888888'
-    const position = [m.mountPoint.x, m.mountPoint.y, m.mountPoint.z]
-    if (m.shape === 'box') {
-      return { id: m.id, role: m.role, geometry: 'box', args: [m.params.x, m.params.y, m.params.z], position, color }
-    }
-    if (m.shape === 'cylinder') {
-      return { id: m.id, role: m.role, geometry: 'cylinder', args: [m.params.radius, m.params.radius, m.params.length, 24], position, color }
-    }
-    throw new Error(`unknown shape: ${m.shape}`)
-  })
+  return bot.modules.map((m) => ({
+    id: m.id,
+    role: m.role,
+    material: m.material,
+    color: MATERIAL_COLORS[m.material] || '#888888',
+    position: [m.mountPoint.x, m.mountPoint.y, m.mountPoint.z],
+    parts: getShape(m.shape).parts(m.params, { role: m.role, rpm: m.rpm }),
+  }))
 }

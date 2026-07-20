@@ -10,7 +10,10 @@ import { resolveImpact } from '../../lib/sim/resolveImpact.js'
 import { fractureFragments } from '../../lib/sim/fracture.js'
 import { computeBot } from '../../lib/domain/computeBot.js'
 
-const ARENA_HALF = 2.2 // meters — bounded box keeps the clash centred
+// meters — bounded box keeps the clash centred. Tightened from 2.2: a 4.4 m box
+// around 0.6 m bots left most of the board empty floor, so the fight read as two
+// specks. Closer quarters also means they actually meet.
+const ARENA_HALF = 1.7
 
 const hpFractionOf = (health) => {
   const mods = Object.values(health)
@@ -112,24 +115,64 @@ export default function Arena({ playerBot, opponentBot, manual = false, running 
   const removeShatter = useCallback((key) => setShatters((prev) => prev.filter((s) => s.key !== key)), [])
 
   return (
-    <Canvas camera={{ position: [0, 5.2, 6.4], fov: 48 }} style={{ height: '100%', width: '100%' }}>
+    <Canvas shadows camera={{ position: [0, 2.9, 3.7], fov: 44 }} style={{ height: '100%', width: '100%' }}>
       <color attach="background" args={['#080a10']} />
-      <ambientLight intensity={0.9} />
-      <hemisphereLight args={['#9fb4c4', '#0a0a12', 0.6]} />
-      <directionalLight position={[3, 8, 4]} intensity={1.6} />
-      <pointLight position={[-3, 3, 1]} intensity={4} distance={12} color="#1fe3e8" />
-      <pointLight position={[3, 3, 1]} intensity={4} distance={12} color="#ff2e6e" />
+      {/* A single hard key light with a tight shadow camera is what gives the
+          bots form. Flat ambient light was why everything read as a paper
+          cut-out; the fill is deliberately weak so the shadows survive. */}
+      <ambientLight intensity={0.32} />
+      <hemisphereLight args={['#9fb4c4', '#0a0a12', 0.35]} />
+      <directionalLight
+        position={[3.2, 7, 3]}
+        intensity={2.4}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-2.4}
+        shadow-camera-right={2.4}
+        shadow-camera-top={2.4}
+        shadow-camera-bottom={-2.4}
+        shadow-camera-near={0.5}
+        shadow-camera-far={20}
+        shadow-bias={-0.0004}
+      />
+      {/* team-coloured rim lights, dimmed so they read as accent rather than paint */}
+      <pointLight position={[-3, 3, 1]} intensity={1.6} distance={12} color="#1fe3e8" />
+      <pointLight position={[3, 3, 1]} intensity={1.6} distance={12} color="#ff2e6e" />
 
-      {/* bounded arena: solid floor, grid, and a glowing rim wall on all 4 sides */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+      {/* Steel floor plate. Rougher and lighter than the old near-black plane so
+          that cast shadows actually land somewhere visible — a shadow on a black
+          floor is not a shadow. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[ARENA_HALF * 2, ARENA_HALF * 2]} />
-        <meshStandardMaterial color="#0d1119" metalness={0.4} roughness={0.8} />
+        <meshStandardMaterial color="#1a2029" metalness={0.35} roughness={0.85} />
       </mesh>
-      <Grid args={[ARENA_HALF * 2, ARENA_HALF * 2]} cellColor="#1b2733" sectionColor="#31586a" position={[0, 0.02, 0]} fadeDistance={30} fadeStrength={1} />
+      {/* Measured grid: 10 cm minor, 50 cm major. Reads as a drafting reference
+          the eye can count in, rather than neon decoration. */}
+      <Grid
+        args={[ARENA_HALF * 2, ARENA_HALF * 2]}
+        cellSize={0.1}
+        cellColor="#26323f"
+        sectionSize={0.5}
+        sectionColor="#3d6479"
+        position={[0, 0.02, 0]}
+        fadeDistance={30}
+        fadeStrength={1}
+      />
+      {/* Lexan barrier: translucent panels, the way a real arena is walled, so
+          the fight stays visible through the near side instead of being hidden
+          behind a glowing bar. */}
       {[[0, ARENA_HALF], [0, -ARENA_HALF], [ARENA_HALF, 0], [-ARENA_HALF, 0]].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.14, z]}>
-          <boxGeometry args={x === 0 ? [ARENA_HALF * 2, 0.28, 0.08] : [0.08, 0.28, ARENA_HALF * 2]} />
-          <meshStandardMaterial color="#12202a" emissive="#2a4a55" emissiveIntensity={0.5} metalness={0.6} roughness={0.5} />
+        <mesh key={i} position={[x, 0.3, z]}>
+          <boxGeometry args={x === 0 ? [ARENA_HALF * 2, 0.6, 0.03] : [0.03, 0.6, ARENA_HALF * 2]} />
+          <meshStandardMaterial color="#9fc4d4" transparent opacity={0.12} metalness={0.1} roughness={0.15} />
+        </mesh>
+      ))}
+      {/* steel kerb rail capping the barrier, which is what gives the arena an
+          edge you can actually see */}
+      {[[0, ARENA_HALF], [0, -ARENA_HALF], [ARENA_HALF, 0], [-ARENA_HALF, 0]].map(([x, z], i) => (
+        <mesh key={`rail-${i}`} position={[x, 0.045, z]} castShadow receiveShadow>
+          <boxGeometry args={x === 0 ? [ARENA_HALF * 2, 0.09, 0.07] : [0.07, 0.09, ARENA_HALF * 2]} />
+          <meshStandardMaterial color="#39434f" metalness={0.55} roughness={0.55} />
         </mesh>
       ))}
 
@@ -142,11 +185,13 @@ export default function Arena({ playerBot, opponentBot, manual = false, running 
           <CuboidCollider args={[ARENA_HALF, 1.2, 0.12]} position={[0, 1.2, ARENA_HALF]} />
         </RigidBody>
 
-        <FightBot bot={playerBot} health={playerHealth.current} position={[-1.3, 0.4, 0]} team="player"
+        <FightBot bot={playerBot} health={playerHealth.current} position={[-1.05, 0.4, 0]} team="player"
           controlled={manual} keysRef={keys} running={running}
           bodyRef={playerRef} targetBodyRef={oppRef} aggression={playerAggression}
           onHit={hit('player', playerDmg, oppHealth, oppRef, opponentBot)} />
-        <FightBot bot={opponentBot} health={oppHealth.current} position={[1.3, 0.4, 0]} team="opponent"
+        {/* Yaw 0 points down +x, so the far-side bot spawns facing away from the
+            fight — turn it to face the player instead of showing its back. */}
+        <FightBot bot={opponentBot} health={oppHealth.current} position={[1.05, 0.4, 0]} rotation={[0, Math.PI, 0]} team="opponent"
           running={running}
           bodyRef={oppRef} targetBodyRef={playerRef} aggression={opponentAggression}
           onHit={hit('opponent', oppDmg, playerHealth, playerRef, playerBot)} />
@@ -155,7 +200,7 @@ export default function Arena({ playerBot, opponentBot, manual = false, running 
           <Debris key={s.key} shatterKey={s.key} position={s.position} fragments={s.fragments} onRemove={removeShatter} />
         ))}
       </Physics>
-      <OrbitControls makeDefault target={[0, 0.3, 0]} minDistance={3} maxDistance={9} maxPolarAngle={Math.PI / 2.2} />
+      <OrbitControls makeDefault target={[0, 0.2, 0]} minDistance={1.8} maxDistance={7} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )
 }
