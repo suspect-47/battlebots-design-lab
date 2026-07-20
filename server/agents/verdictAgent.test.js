@@ -6,7 +6,7 @@ import { defaultBot } from '../../src/lib/scene/defaultBot.js'
 const ctx = fightContext(defaultBot(), { name: 'Tombstone', weapon: 'horizontal_spinner', wins: 40, losses: 8, koWins: 34 }, 'player')
 
 describe('verdictAgent', () => {
-  it('parses a valid OpenAI verdict', async () => {
+  it('parses a valid Qwen verdict', async () => {
     const fetchImpl = async () => ({
       ok: true,
       json: async () => ({ choices: [{ message: { content: JSON.stringify({ winner: 'player', confidence: 78, reasoning: 'a b', beats: [{ t: 0, action: 'hit', actor: 'player', text: 'x' }] }) } }] }),
@@ -14,7 +14,7 @@ describe('verdictAgent', () => {
     const v = await makeVerdictAgent({ apiKey: 'sk-test', fetchImpl }).verdict(ctx)
     expect(v.winner).toBe('player')
     expect(v.confidence).toBe(78)
-    expect(v.source).toBe('openai')
+    expect(v.source).toBe('qwen')
   })
 
   it('falls back to the deterministic verdict on a non-2xx', async () => {

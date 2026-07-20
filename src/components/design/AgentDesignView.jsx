@@ -61,7 +61,7 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab, lab
     try {
       // let the "negotiating" frame paint before the society runs
       await new Promise((r) => setTimeout(r, 30))
-      // always run the best available brain: real OpenAI via backend when keyed, falls back to in-browser deterministic
+      // always run the best available brain: real Qwen via backend when keyed, falls back to in-browser deterministic
       // Always start from the build the user has open: the answer is "what do I
       // change about MY bot", and the server falls back to a neutral seed on its
       // own if that build cannot be read.
@@ -92,7 +92,7 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab, lab
             <div className="chip" style={{ color: 'var(--amber)', borderColor: 'rgba(255,171,18,0.3)' }}>offline heuristic</div>
           )}
           {result?.source === 'backend' && (
-            <div className="chip chip-dot" style={{ '--accent': 'var(--lime)', color: 'var(--lime)' }}>GPT reasoning</div>
+            <div className="chip chip-dot" style={{ '--accent': 'var(--lime)', color: 'var(--lime)' }}>Qwen reasoning</div>
           )}
         </div>
         {result && <div className="anim-rise"><ScoutPanel scout={result.scout} image={(() => { const rb = roster.find((b) => b.name === result.scout.name); return rb?.cartoonUrl || rb?.imageUrl })()} /></div>}

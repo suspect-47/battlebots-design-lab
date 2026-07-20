@@ -15,6 +15,7 @@ import ChatWidget from './components/chat/ChatWidget.jsx'
 import { editorReducer } from './lib/editor/editorReducer.js'
 import { defaultBot } from './lib/scene/defaultBot.js'
 import { hudModel } from './lib/scene/hudModel.js'
+import { computeBot } from './lib/domain/computeBot.js'
 import { opponentProfile } from './lib/sim/opponentProfile.js'
 import { opponentBotFromRecord } from './lib/sim/opponentBot.js'
 import { loadMemory, saveMemory } from './lib/memory/memoryStorage.js'
@@ -76,9 +77,10 @@ export default function App() {
   const profile = useMemo(() => (opponentRecord ? opponentProfile(opponentRecord) : null), [opponentRecord])
   // opponent's physical bot, built from its real weapon class + record (stable per opponent)
   const opponentBot = useMemo(() => (opponentRecord ? opponentBotFromRecord(opponentRecord) : null), [opponentRecord])
+  const derived = useMemo(() => computeBot(bot), [bot])
   const cg = hudModel(bot).cg
 
-  // When a fight resolves, fetch an analyst verdict (backend OpenAI when running,
+  // When a fight resolves, fetch an analyst verdict (backend Qwen when running,
   // deterministic offline otherwise) and show it over the arena.
   useEffect(() => {
     if (mode !== 'fight') { setVerdict(null); return }
@@ -120,7 +122,7 @@ export default function App() {
   }
 
   // Undo/redo as muscle memory, not just as buttons. Scoped to the build view so
-  // ⌘Z never fights the browser while the user is typing to Freya or scrubbing
+  // ⌘Z never fights the browser while the user is typing to Toro or scrubbing
   // the studio transport.
   useEffect(() => {
     if (mode !== 'build') return
@@ -209,7 +211,11 @@ export default function App() {
             </aside>
             <section className="min-h-0 relative p-2">
               <GlassPanel frosted={false}>
-                <BotScene bot={bot} cg={cg} selectedId={selectedId} onSelect={(id) => dispatch({ type: 'select', id })} />
+                <BotScene
+                  bot={bot} cg={cg} derived={derived} selectedId={selectedId}
+                  opponent={opponentRecord && { name: opponentRecord.name, weapon: opponentRecord.weapon, wins: opponentRecord.wins, losses: opponentRecord.losses, koWins: opponentRecord.koWins }}
+                  onSelect={(id) => dispatch({ type: 'select', id })}
+                />
               </GlassPanel>
             </section>
             <aside className="min-h-0 relative p-2 anim-rise">

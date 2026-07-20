@@ -2,7 +2,7 @@ import { fightContext, fallbackVerdict } from './fightVerdict.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
-// Get a fight verdict: try the backend (real OpenAI when OPENAI_API_KEY is set
+// Get a fight verdict: try the backend (real Qwen when DASHSCOPE_API_KEY is set
 // server-side), fall back to the in-browser deterministic verdict if the backend
 // is unreachable — so a verdict always renders instantly offline.
 export async function getFightVerdict(playerBot, opponentRecord, winner) {

@@ -1,0 +1,72 @@
+# Serverless Devs v3 — Alibaba Cloud Function Compute 3.0
+# Deploys the BattleBots Fastify API as a custom-container function.
+#
+#   npm i -g @serverless-devs/s3
+#   s config add --AccessKeyID ... --AccessKeySecret ... -a default
+#   export DASHSCOPE_API_KEY=sk-...            # Alibaba Cloud Model Studio
+#   export ACR_NAMESPACE=<your-acr-namespace>
+#   s deploy -y
+#
+# Full walkthrough: deploy/README.md
+
+edition: 3.0.0
+name: battlebots-design-lab
+# Credential alias created by `s config add ... -a default`.
+access: ${env('ALIYUN_ACCESS', 'default')}
+
+vars:
+  region: ap-southeast-1
+  functionName: battlebots-api
+  # Alibaba Cloud Container Registry (ACR), Singapore region.
+  image: registry-intl.ap-southeast-1.aliyuncs.com/${env('ACR_NAMESPACE', '<namespace>')}/battlebots-api:latest
+
+resources:
+  battlebots_api:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: ${vars.functionName}
+      description: BattleBots Design Lab API — Fastify + Alibaba Cloud Model Studio (Qwen)
+      runtime: custom-container
+      timeout: 60
+      memorySize: 1024
+      diskSize: 512
+      cpu: 1
+      instanceConcurrency: 20
+      internetAccess: true
+      customContainerConfig:
+        image: ${vars.image}
+        # The image's CMD already starts Fastify on $PORT; no override needed.
+        port: 9000
+        healthCheckConfig:
+          httpGetUrl: /health
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+      environmentVariables:
+        PORT: "9000"
+        NODE_ENV: production
+        # Alibaba Cloud Model Studio (DashScope) — powers server/llm/qwen.js
+        DASHSCOPE_API_KEY: ${env('DASHSCOPE_API_KEY')}
+        DASHSCOPE_BASE_URL: ${env('DASHSCOPE_BASE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')}
+        QWEN_MODEL: ${env('QWEN_MODEL', 'qwen-plus')}
+        # Optional: ApsaraDB RDS for PostgreSQL. Unset -> /bots and /meta fall
+        # back to the seed dataset; the API still boots.
+        DATABASE_URL: ${env('DATABASE_URL', '')}
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          # Anonymous auth: the public demo URL needs no signature.
+          qualifier: LATEST
+          triggerConfig:
+            authType: anonymous
+            disableURLInternet: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - HEAD

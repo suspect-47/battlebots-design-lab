@@ -10,7 +10,7 @@ describe('POST /chat', () => {
   })
 
   it('503s when no chat agent is available (no key, no fallback)', async () => {
-    const app = buildApp({}) // no injected agent, no OPENAI_API_KEY in test env
+    const app = buildApp({}) // no injected agent, no DASHSCOPE_API_KEY in test env
     const res = await app.inject({ method: 'POST', url: '/chat', payload: { messages: [{ role: 'user', content: 'hi' }] } })
     expect(res.statusCode).toBe(503)
     await app.close()

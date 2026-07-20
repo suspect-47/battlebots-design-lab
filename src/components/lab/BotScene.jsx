@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { useRef, useState } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Grid, ContactShadows } from '@react-three/drei'
 import { botToMeshes } from '../../lib/scene/botToMeshes.js'
 import CadPart from '../scene/CadPart.jsx'
+import DesignReview from './DesignReview.jsx'
 
 const SELECT = '#1fe3e8'
 const EDGE = '#20303d'
@@ -32,9 +33,23 @@ function ModuleMesh({ d, selected, hovered, onSelect, onHover }) {
   )
 }
 
-export default function BotScene({ bot, cg, selectedId, onSelect }) {
+// Hands the parent a function that renders the current frame and reads it back
+// as a PNG. The read has to happen immediately after a draw — with the default
+// swap-chain the buffer is already cleared by the time an event handler runs,
+// which is why the canvas below asks for preserveDrawingBuffer.
+function CaptureBridge({ onReady }) {
+  const { gl, scene, camera } = useThree()
+  onReady(() => {
+    gl.render(scene, camera)
+    return gl.domElement.toDataURL('image/png')
+  })
+  return null
+}
+
+export default function BotScene({ bot, cg, derived, selectedId, onSelect, opponent }) {
   const meshes = botToMeshes(bot)
   const [hoveredId, setHoveredId] = useState(null)
+  const captureRef = useRef(null)
 
   return (
     <div className="relative h-full w-full">
@@ -50,7 +65,24 @@ export default function BotScene({ bot, cg, selectedId, onSelect }) {
       {/* A 250 lb bot is ~0.6 m across. The old camera sat far enough back to fit
           a three-metre object, so the part being edited occupied a fifth of the
           viewport with dead grid all around it. */}
-      <Canvas shadows camera={{ position: [1.02, 0.66, 1.02], fov: 42 }} style={{ height: '100%', width: '100%' }}>
+      {derived && (
+        <DesignReview
+          capture={() => captureRef.current?.()}
+          bot={bot}
+          derived={derived}
+          opponent={opponent}
+        />
+      )}
+
+      <Canvas
+        shadows
+        camera={{ position: [1.02, 0.66, 1.02], fov: 42 }}
+        style={{ height: '100%', width: '100%' }}
+        // the design reviewer reads this canvas back as a PNG; without it the
+        // buffer is undefined by the time toDataURL is called
+        gl={{ preserveDrawingBuffer: true }}
+      >
+        <CaptureBridge onReady={(fn) => { captureRef.current = fn }} />
         <color attach="background" args={['#08090d']} />
         <fog attach="fog" args={['#08090d', 3, 9]} />
         {/* one hard key light plus weak fill, so parts cast real shadows on each

@@ -96,7 +96,31 @@ function driveGeometry(drivetrain) {
   return { radius: +radius.toFixed(5), width: +width.toFixed(5), count, track: DRIVE_TRACK }
 }
 
+// The axis each specialist owns. This is the division of labour the society is
+// built on, so it has to be enforced on the live path too: a model asked to act
+// as the armor engineer will occasionally answer with a drivetrain swap, and
+// letting that through quietly collapses three specialists into one generalist.
+export const ROLE_EDIT_TYPE = Object.freeze({
+  weapon: 'setWeapon',
+  armor: 'setArmor',
+  drivetrain: 'setDrivetrain',
+})
+
+// An edit is the specialist's to make only if it names that specialist's axis.
+export function editIsOnAxis(role, edit) {
+  return !!edit && typeof edit === 'object' && edit.type === ROLE_EDIT_TYPE[role]
+}
+
+// applyEdit returns the bot untouched for an unknown type or an edit whose
+// fields are all absent, so "did it apply" cannot be assumed — an edit that
+// changes nothing would otherwise be scored, ranked and shown in the ledger as
+// a proposal while being a no-op.
+export function editChangesBot(bot, edit) {
+  return JSON.stringify(applyEdit(bot, edit)) !== JSON.stringify(bot)
+}
+
 export function applyEdit(bot, edit) {
+  if (!edit || typeof edit !== 'object') return bot
   switch (edit.type) {
     case 'setWeapon':
       return mapRole(bot, 'weapon', (m) => ({

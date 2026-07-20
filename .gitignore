@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 .playwright-mcp
+.DS_Store
+_submission

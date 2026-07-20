@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deterministicAgent, pickAgent, makeOpenaiAgent } from './agent.js'
+import { deterministicAgent, pickAgent, makeQwenAgent } from './agent.js'
 import { computeBot } from '../../src/lib/domain/computeBot.js'
 import { neutralSeed } from './seeds.js'
 import { scoutOpponent } from './scout.js'
@@ -28,14 +28,14 @@ describe('deterministicAgent', () => {
     expect(pickAgent({})).toBe(deterministicAgent)
   })
 
-  it('pickAgent returns an OpenAI-backed agent when a key is set', () => {
-    const a = pickAgent({ OPENAI_API_KEY: 'sk-test' })
+  it('pickAgent returns a Qwen-backed agent when a Model Studio key is set', () => {
+    const a = pickAgent({ DASHSCOPE_API_KEY: 'sk-test' })
     expect(a).not.toBe(deterministicAgent)
     expect(typeof a.propose).toBe('function')
   })
 })
 
-describe('makeOpenaiAgent', () => {
+describe('makeQwenAgent', () => {
   const bot = applyEdit(neutralSeed(), { type: 'setArmor', material: 'uhmw', thickness: 0.006, coverage: 1 })
 
   it('takes the model edit and scores it against the real opponent', async () => {
@@ -43,7 +43,7 @@ describe('makeOpenaiAgent', () => {
       edit: { type: 'setArmor', material: 'ar500_steel', thickness: 0.02, coverage: 2 },
       reasoning: 'harden vs spinner',
     }))
-    const p = await makeOpenaiAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
     expect(p.edit.material).toBe('ar500_steel')
     expect(p.reasoning).toBe('harden vs spinner')
     // the point of the live path: whatever it said, we have measured it
@@ -52,24 +52,48 @@ describe('makeOpenaiAgent', () => {
 
   it('returns null when the model replies with edit:null', async () => {
     const fetchImpl = reply(JSON.stringify({ edit: null, reasoning: 'satisfied' }))
-    expect(await makeOpenaiAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)).toBeNull()
+    expect(await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)).toBeNull()
   })
 
   it('falls back to the measured proposal on a non-2xx response', async () => {
     const fetchImpl = async () => ({ ok: false, status: 500, text: async () => 'err' })
-    const p = await makeOpenaiAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
     expect(p.edit.type).toBe('setArmor')
   })
 
   it('falls back to the measured proposal on malformed JSON (never throws)', async () => {
-    const p = await makeOpenaiAgent({ apiKey: 'sk-test', fetchImpl: reply('{not json') }).propose('armor', ctx(bot), opponent)
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl: reply('{not json') }).propose('armor', ctx(bot), opponent)
     expect(p).toBeDefined()
     expect(p.edit.type).toBe('setArmor')
   })
 
+  it('refuses an edit for an axis this specialist does not own', async () => {
+    // the division of labour is the whole society; a model answering the armor
+    // question with a drivetrain swap must not be able to make that stick
+    const fetchImpl = reply(JSON.stringify({ edit: { type: 'setDrivetrain', drivetrain: '6wd' }, reasoning: 'more traction' }))
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    expect(p.edit.type).toBe('setArmor')
+    expect(p.reasoning).not.toBe('more traction')
+  })
+
+  it('refuses an edit with an unknown type instead of scoring a no-op', async () => {
+    // applyEdit returns the bot untouched for an unrecognised type, so without
+    // a check this lands in the ledger as a proposal that changed nothing
+    const fetchImpl = reply(JSON.stringify({ edit: { material: 'ar500_steel', thickness: 0.026 }, reasoning: 'thicker' }))
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    expect(p.edit.type).toBe('setArmor')
+    expect(p.reasoning).not.toBe('thicker')
+  })
+
+  it('refuses an on-axis edit that leaves the build identical', async () => {
+    const fetchImpl = reply(JSON.stringify({ edit: { type: 'setArmor' }, reasoning: 'no change' }))
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    expect(p.reasoning).not.toBe('no change')
+  })
+
   it('refuses to pass through an edit that produces an invalid bot', async () => {
     const fetchImpl = reply(JSON.stringify({ edit: { type: 'setDrivetrain', drivetrain: 'hovercraft' }, reasoning: 'fly' }))
-    const p = await makeOpenaiAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
+    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
     expect(p.edit.drivetrain).toBeUndefined()
   })
 })

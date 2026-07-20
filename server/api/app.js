@@ -3,14 +3,17 @@ import { runDesign } from '../agents/designService.js'
 import { pickAgent, deterministicAgent } from '../agents/agent.js'
 import { pickVerdictAgent } from '../agents/verdictAgent.js'
 import { pickChatAgent } from '../agents/chatAgent.js'
+import { pickVisionAgent } from '../agents/visionAgent.js'
 import { fightContext } from '../../src/lib/verdict/fightVerdict.js'
 import { aggregateByClass } from '../../src/lib/analysis/aggregate.js'
 
-export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) {
-  const app = Fastify({ logger: false })
+export function buildApp({ pool, agent, roster, verdictAgent, chatAgent, visionAgent } = {}) {
+  // 8 MB: /critique carries a base64 PNG of the CAD viewport, which blows past
+  // Fastify's 1 MB default and would otherwise 413 before reaching the handler.
+  const app = Fastify({ logger: false, bodyLimit: 8 * 1024 * 1024 })
 
   // Permissive CORS so the Vite frontend (different port) can call /design for
-  // the live-OpenAI path. Preflight + actual requests both get the headers.
+  // the live-Qwen path. Preflight + actual requests both get the headers.
   app.addHook('onRequest', async (request, reply) => {
     reply.header('Access-Control-Allow-Origin', '*')
     reply.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
@@ -60,8 +63,8 @@ export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) 
     return (verdictAgent || pickVerdictAgent(process.env)).verdict(ctx)
   })
 
-  // Freya AI chat. Pure-AI (no deterministic fallback): without a server-side
-  // OPENAI_API_KEY there is no agent, so return 503 for the UI to surface.
+  // Toro AI chat. Pure-AI (no deterministic fallback): without a server-side
+  // DASHSCOPE_API_KEY there is no agent, so return 503 for the UI to surface.
   app.post('/chat', async (request, reply) => {
     const { messages } = request.body || {}
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -69,12 +72,33 @@ export function buildApp({ pool, agent, roster, verdictAgent, chatAgent } = {}) 
     }
     const useChat = chatAgent || pickChatAgent(process.env)
     if (!useChat) {
-      return reply.code(503).send({ error: 'AI chat unavailable — set OPENAI_API_KEY on the backend (npm run api).' })
+      return reply.code(503).send({ error: 'AI chat unavailable — set DASHSCOPE_API_KEY on the backend (npm run api).' })
     }
     try {
       return await useChat.reply(messages.slice(-16))
     } catch (err) {
       return reply.code(502).send({ error: `AI upstream error: ${err.message}` })
+    }
+  })
+
+  // The one agent that looks at the build instead of computing over it. Takes a
+  // PNG data URL captured from the CAD viewport. Pure-AI, like Toro: a visual
+  // read has no offline equivalent, so no key means 503 rather than a fabricated
+  // critique. Advisory only — it never returns an edit.
+  app.post('/critique', async (request, reply) => {
+    const { image, spec, opponent } = request.body || {}
+    if (typeof image !== 'string' || !image.startsWith('data:image/')) {
+      return reply.code(400).send({ error: 'image must be a data:image/... URL captured from the viewport' })
+    }
+    if (!spec) return reply.code(400).send({ error: 'spec required' })
+    const useVision = visionAgent || pickVisionAgent(process.env)
+    if (!useVision) {
+      return reply.code(503).send({ error: 'Design review unavailable — set DASHSCOPE_API_KEY on the backend (npm run api).' })
+    }
+    try {
+      return await useVision.review({ image, spec, opponent })
+    } catch (err) {
+      return reply.code(502).send({ error: `Qwen-VL upstream error: ${err.message}` })
     }
   })
 

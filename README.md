@@ -2,35 +2,58 @@
 
 A production-grade computer-aided design tool for BattleBots teams: design a bot in 3D, let an **agent society** negotiate a build grounded in real historical fight data, simulate the fight with real physics, and read the meta — with the society **learning across sessions**.
 
-Four modes (top nav) plus **Freya**, an in-app AI assistant (bottom-right):
+Four modes (top nav) plus **Toro**, an in-app AI assistant (bottom-right):
 
 - **BUILD** — 3D parametric CAD editor (React-Three-Fiber). Edit weapon/armor/drivetrain/chassis; live weight/balance/HP against the 250 lb budget. **Reshape** any module into another shape from the kit (a drum becomes a bar, a flipper, forks — shared dimensions carry across, the rest are re-seeded in range), with **undo/redo** (⌘Z / ⇧⌘Z) and reset. Dimensions read in millimetres, not raw metres.
 - **AGENTS** — the **Counter-Design Studio**. It answers "what should I change about *my* bot to beat this one": the search starts from whatever you have open in BUILD (falling back to a neutral seed only if that build cannot be read). Five specialists (scout, weapon, armor, drivetrain, chief) each enumerate every option on the axis they own, score all of them against the specific opponent, and argue for their pick; the chief accepts only what improves the predicted margin and still fits the weight budget. You get a proposal ledger (including what was refused and why), a spec diff against your build, the tradeoff space that was searched, and a per-specialist contribution breakdown — plus a measured comparison against a generalist given the same starting bot that never scouted. Load the result back into the lab.
 - **ARENA** — stage your build vs a roster opponent (built from its real weapon class) in a Rapier physics arena. Press **Start**, watch (Auto-sim) or **drive it yourself** (Manual, WASD). Live HP bars, a **Sim Model** panel explaining the prediction, and an AI/offline fight-analyst verdict.
 - **META** — "The Meta Intelligence" dashboard from **real Bright Data-scraped records**: weapon-class win/KO charts, a threat-ranking dumbbell, field-composition donut, counter-build recs, a top-10 leaderboard with generated bot avatars, and embedded fight videos.
 
-## Run
+## Setup
+
+Requires **Node 20+**.
+
+### 1. Quick start — no key needed
 
 ```bash
 npm install
-npm run dev          # frontend at http://localhost:5173
+npm run dev          # app at http://localhost:5173
 ```
 
-The agent society and the physics arena run **entirely in the browser** — no backend or API key required. The META dashboard renders from a committed real-data snapshot. Freya chat and live agent reasoning need the backend + an OpenAI key (below).
+The agent society and the physics arena run **entirely in the browser** using a deterministic fallback, and the META dashboard renders from a committed real-data snapshot. So the app is fully usable with no backend and no key. Live Qwen reasoning, the fight analyst, Toro chat, and the "Have Qwen look at it" reviewer need the backend + a key (below).
 
-## Live AI (real OpenAI reasoning)
+### 2. Full setup — live Qwen on Alibaba Cloud Model Studio
 
-To have the specialists reason with a real LLM instead of the deterministic rules:
+Get a key at [qwencloud.com](https://www.qwencloud.com) → **Model Studio → API keys**, then:
 
 ```bash
-cp .env.example .env          # then set OPENAI_API_KEY=sk-...
-npm run api                   # backend at http://localhost:3001
-npm run dev                   # in another terminal
+cp .env.example .env          # set DASHSCOPE_API_KEY=sk-... in the new .env
+npm run api                   # 1st terminal — backend at http://localhost:3001
+npm run dev                   # 2nd terminal — app at http://localhost:5173
+npm run qwen:smoke            # optional — verify the live Model Studio path end-to-end
 ```
 
-The **AGENTS** view always posts the design request to the backend; when a key is set, the specialists' proposals come from OpenAI instead of the deterministic search. Either way the chief **scores every proposal against the actual opponent** before accepting it, so the model can influence a build but never ship an unverified one. The key stays server-side, and if the backend is unreachable the in-browser search takes over — the UI never breaks.
+Keep **both** `npm run api` and `npm run dev` running. Defaults to `qwen-plus` on the international endpoint; override with `QWEN_MODEL` / `DASHSCOPE_BASE_URL` in `.env`. The key stays server-side — it never reaches the browser.
 
-**Freya chat** (`POST /chat`) is pure-AI (no offline fallback): it needs `OPENAI_API_KEY` + `npm run api`, otherwise the widget shows an offline notice.
+### How the model is used
+
+Every agent reasons through Qwen via one client, [`server/llm/qwen.js`](server/llm/qwen.js) (Model Studio's OpenAI-compatible chat-completions surface). Four roles:
+
+- **Design specialists** — the five-agent society (strict-JSON edits).
+- **Fight analyst** — the ARENA verdict + beat sheet (strict JSON).
+- **Toro** — the in-app chat assistant.
+- **Design reviewer** — **"Have Qwen look at it"** in BUILD sends a render of the 3D viewport to `qwen-vl-max` and returns a geometric critique (ground clearance, frontal profile, weapon overhang, balance) reconciled with the computed numbers. The one agent that *sees* the build, and the one that never emits an edit — a visual read advises, it does not ship.
+
+The chief always **scores every proposal against the actual opponent** before accepting it, so the model can influence a build but never ship an unverified one. The society and fight analyst fall back to deterministic logic if the backend is unreachable; Toro chat (`POST /chat`) and the reviewer (`POST /critique`) are pure-AI (no offline fallback) and show an offline notice without a key.
+
+## Deploy to Alibaba Cloud
+
+The backend ships as a container for **Function Compute 3.0**, with an ECS path as an alternative and the frontend on **OSS static website hosting**. Everything is in [`deploy/`](deploy/) — see [`deploy/README.md`](deploy/README.md).
+
+```bash
+docker build -f deploy/Dockerfile -t battlebots-api .
+s deploy -y                   # Serverless Devs → Function Compute (deploy/s.yaml)
+```
 
 ## Real data (Bright Data)
 
@@ -38,7 +61,7 @@ The **AGENTS** view always posts the design request to the backend; when a key i
 
 ```bash
 npm run enrich       # Bright Data Web Unlocker → per-bot images + top-bot fight videos → bots.json
-npm run cartoonize   # OpenAI gpt-image-1 → transparent chibi avatars for the top 10 → public/bots/
+npm run cartoonize   # image model → transparent chibi avatars for the top 10 → public/bots/ (needs OPENAI_API_KEY; assets are committed, so this is optional)
 npm run ingest       # (optional) Bright Data → Postgres bots table for the live /meta path
 ```
 
@@ -53,7 +76,7 @@ Current agreement is **Spearman rho = 0.83** on class ordering (rmse 0.12), unch
 ## Test / build
 
 ```bash
-npm test             # ~370 unit tests (DB-dependent suite skips without DATABASE_URL)
+npm test             # 553 unit tests (DB-dependent suite skips without DATABASE_URL)
 npm run build
 ```
 
@@ -70,7 +93,22 @@ npm run build
 | Cross-session memory | `src/lib/memory/` |
 | Meta analysis + charts | `src/lib/analysis/`, `src/components/analysis/` |
 | Bright Data enrichment (images/videos) + cartoon avatars | `server/ingest/`, `scripts/` |
-| Freya AI chat | `src/components/chat/`, `src/lib/chat/`, `server/agents/chatAgent.js` |
-| REST API (health/bots/meta/design/verdict/chat) | `server/api/` |
+| Toro AI chat | `src/components/chat/`, `src/lib/chat/`, `server/agents/chatAgent.js` |
+| Qwen design reviewer (`qwen-vl-max`, vision) | `server/agents/visionAgent.js` |
+| Alibaba Cloud Model Studio client | `server/llm/qwen.js` |
+| REST API (health/bots/meta/design/verdict/chat/critique) | `server/api/` |
+| Alibaba Cloud deployment (Function Compute / ECS / OSS) | `deploy/` |
 
 Everything decision-relevant is a pure, unit-tested function; the LLM, 3D, and physics are thin layers over that core.
+
+## Hackathon submission
+
+Built for the **Global AI Hackathon Series with Qwen Cloud** — **Track 3: Agent Society**.
+
+- Architecture diagrams: [`docs/architecture.md`](docs/architecture.md)
+- Alibaba Cloud API proof file: [`server/llm/qwen.js`](server/llm/qwen.js)
+- Alibaba Cloud deployment: [`deploy/`](deploy/)
+
+## License
+
+MIT — see [LICENSE](LICENSE).

@@ -10,7 +10,7 @@ export default function VerdictPanel({ verdict, playerName, opponentName }) {
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <span className="chip chip-dot" style={{ '--accent': accent }}>
-              Official Decision {verdict.source === 'openai' ? '· OpenAI' : '· Offline'}
+              Official Decision {verdict.source === 'qwen' ? '· Qwen' : '· Offline'}
             </span>
             <div className="fh-winner mt-2">{winnerName}<span className="text-[var(--ink-3)] text-[18px] ml-2">WINS</span></div>
           </div>

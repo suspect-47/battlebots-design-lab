@@ -56,8 +56,8 @@ function tryWorker(record, memory, seedBot) {
   })
 }
 
-// Live path: the backend runs the society with real OpenAI reasoning when
-// OPENAI_API_KEY is set server-side (otherwise the backend itself uses the
+// Live path: the backend runs the society with real Qwen reasoning (Alibaba
+// Cloud Model Studio) when DASHSCOPE_API_KEY is set server-side (otherwise the backend itself uses the
 // deterministic agent). If the backend is unreachable, fall back to the
 // in-browser deterministic society so the UI never breaks.
 //
