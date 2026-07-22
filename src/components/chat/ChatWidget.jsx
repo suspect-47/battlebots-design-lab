@@ -2,7 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import BullAvatar from './BullAvatar.jsx'
 import { sendChat } from '../../lib/chat/chatClient.js'
 
-const GREETING = "Hey, champ! I'm Toro. Ask me anything about building your bot — weapons, armor, weight, counters, or reading the meta. 🐂"
+const GREETING = "Hey, champ! I'm Toro. Ask me anything about building your bot: weapons, armor, weight, counters, or reading the meta. 🐂"
+
+const SUGGESTIONS = [
+  'Counter a vertical spinner',
+  'Best armor for 250 lb',
+  'Which mode should I use?',
+]
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
@@ -59,8 +65,8 @@ export default function ChatWidget() {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  async function send() {
-    const text = input.trim()
+  async function send(preset) {
+    const text = (typeof preset === 'string' ? preset : input).trim()
     if (!text || loading) return
     setError(null)
     const next = [...messages, { role: 'user', content: text }]
@@ -89,7 +95,7 @@ export default function ChatWidget() {
       {/* ---- panel ---- */}
       {open && (
         <div
-          className="panel panel-clip w-[min(380px,calc(100vw-2.5rem))] h-[min(560px,calc(100vh-8rem))] flex flex-col overflow-hidden anim-rise"
+          className="panel panel-clip w-[min(370px,calc(100vw-2.5rem))] h-[min(500px,calc(100vh-9.5rem))] flex flex-col overflow-hidden anim-rise"
           style={{ '--accent': 'var(--amber)' }}
         >
           {/* header */}
@@ -111,6 +117,18 @@ export default function ChatWidget() {
           {/* messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} />)}
+            {messages.length === 1 && !loading && (
+              <div className="flex flex-wrap gap-1.5 pt-1 anim-rise">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="mono text-[11px] px-2.5 py-1.5 rounded-full text-[var(--ink-2)] border border-[var(--line-strong)] transition-colors hover:text-[var(--ink)] hover:border-[var(--amber)]"
+                    style={{ background: 'color-mix(in srgb, var(--elev) 55%, transparent)' }}
+                  >{s}</button>
+                ))}
+              </div>
+            )}
             {loading && <Typing />}
             {error && (
               <div className="mono text-[11px] leading-relaxed px-3 py-2.5 rounded-[10px]"
@@ -148,7 +166,7 @@ export default function ChatWidget() {
         className="relative transition-transform duration-200 hover:scale-110 active:scale-95 cursor-grab active:cursor-grabbing touch-none"
         aria-label={open ? 'Close Toro chat' : 'Open Toro chat'}
       >
-        <BullAvatar size={140} scene={false} animate={!open} expression={expr} className="bull-cast" />
+        <BullAvatar size={open ? 76 : 116} scene={false} animate={!open} expression={expr} className="bull-cast" />
       </button>
     </div>
   )

@@ -14,7 +14,7 @@ export async function sendChat(history) {
       body: JSON.stringify({ messages: history }),
     })
   } catch {
-    throw new Error('Toro is offline — start the backend with `npm run api` (needs DASHSCOPE_API_KEY).')
+    throw new Error('Toro is offline. Start the backend with `npm run api` (needs DASHSCOPE_API_KEY).')
   }
   if (!res.ok) {
     let msg = `chat ${res.status}`
