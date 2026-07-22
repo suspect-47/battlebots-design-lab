@@ -48,10 +48,22 @@ export function buildApp({ pool, agent, roster, verdictAgent, chatAgent, visionA
       } catch { record = null }
     }
     if (!record) return reply.code(400).send({ error: `unknown opponent: ${opponentName}` })
-    const useAgent = agent || pickAgent(process.env) || deterministicAgent
+    const useAgent = agent || pickAgent(process.env)
+    // Production stance: NO deterministic fallback. Tests inject an agent; in
+    // production `pickAgent` returns the deterministic society only when the
+    // server has no DASHSCOPE_API_KEY. Serving that as if it were Qwen is a
+    // lookalike, which is worse than an honest failure — so refuse with 503.
+    if (!agent && useAgent === deterministicAgent) {
+      return reply.code(503).send({ error: 'Agent Society unavailable — set DASHSCOPE_API_KEY on the backend (npm run api).' })
+    }
     // seedBot is optional: the studio sends the caller's current Lab build so
     // the search answers "what should I change about MY bot". runDesign vets it.
-    return runDesign({ opponentRecord: record, agent: useAgent, memory, seedBot })
+    // A Qwen upstream failure surfaces as 502 rather than a silent deterministic run.
+    try {
+      return await runDesign({ opponentRecord: record, agent: useAgent, memory, seedBot })
+    } catch (err) {
+      return reply.code(502).send({ error: `Qwen upstream error: ${err.message}` })
+    }
   })
 
   app.post('/verdict', async (request, reply) => {

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Eye } from 'lucide-react'
 import { requestCritique, critiqueSpec } from '../../lib/critique/critiqueClient.js'
 
 const STANCE = {
@@ -43,8 +44,16 @@ export default function DesignReview({ capture, bot, derived, opponent }) {
         type="button"
         onClick={run}
         disabled={status === 'loading'}
-        className="mono text-[10px] uppercase tracking-[0.14em] px-3 py-2 rounded border border-[var(--line,#20303d)] bg-[rgba(8,9,13,0.82)] text-[var(--ink-2,#9fb4c4)] hover:text-white hover:border-[var(--teal,#1fe3e8)] disabled:opacity-50 backdrop-blur"
+        className="group inline-flex items-center gap-2 mono text-[11px] font-bold uppercase tracking-[0.16em] px-4 py-2.5 rounded-xl text-white/90 hover:text-white transition-all duration-200 hover:-translate-y-px disabled:opacity-60 disabled:hover:translate-y-0"
+        style={{
+          background: 'linear-gradient(135deg, rgba(31,227,232,0.18), rgba(31,227,232,0.05) 60%, rgba(255,255,255,0.04))',
+          border: '1px solid rgba(255,255,255,0.20)',
+          backdropFilter: 'blur(16px) saturate(1.5)',
+          WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+          boxShadow: '0 10px 34px -10px rgba(31,227,232,0.60), inset 0 1px 0 rgba(255,255,255,0.28)',
+        }}
       >
+        <Eye size={14} className={`opacity-80 group-hover:opacity-100 ${status === 'loading' ? 'animate-pulse' : ''}`} style={{ color: 'var(--cyan, #1fe3e8)' }} />
         {status === 'loading' ? 'Qwen is looking…' : 'Have Qwen look at it'}
       </button>
 

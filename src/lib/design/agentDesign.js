@@ -1,85 +1,42 @@
-import { runDesign } from '../../../server/agents/designService.js'
-import { deterministicAgent } from '../../../server/agents/agent.js'
-
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
-// In-browser deterministic agent society — the default, always available, no key.
-// Runs in a worker where one is available (browsers) and inline where one is not
-// (tests, SSR), so the search never blocks whatever thread is drawing the UI.
-export async function designVsOpponent(record, memory, seedBot) {
-  const viaWorker = await tryWorker(record, memory, seedBot)
-  if (viaWorker) return viaWorker
-  return runDesign({ opponentRecord: record, agent: deterministicAgent, memory, seedBot })
-}
-
-let workerRef = null
-let nextId = 1
-
-function getWorker() {
-  if (typeof Worker === 'undefined') return null
-  if (workerRef === false) return null // construction already failed once
-  if (workerRef) return workerRef
-  try {
-    workerRef = new Worker(new URL('./design.worker.js', import.meta.url), { type: 'module' })
-    // A crashed worker must not wedge every later run — drop it and rebuild.
-    workerRef.addEventListener('error', () => { workerRef = null })
-    return workerRef
-  } catch {
-    workerRef = false
-    return null
-  }
-}
-
-// Resolves null (rather than throwing) whenever the worker path is unavailable
-// or misbehaves, so the caller just falls through to running inline.
-function tryWorker(record, memory, seedBot) {
-  const worker = getWorker()
-  if (!worker) return Promise.resolve(null)
-  return new Promise((resolve) => {
-    const id = nextId++
-    const done = (value) => {
-      worker.removeEventListener('message', onMessage)
-      worker.removeEventListener('error', onError)
-      clearTimeout(timer)
-      resolve(value)
-    }
-    const onMessage = (e) => {
-      if (e.data?.id !== id) return
-      done(e.data.ok ? e.data.result : null)
-    }
-    const onError = () => done(null)
-    // A wedged worker must not hang the UI forever; fall back to inline instead.
-    const timer = setTimeout(() => done(null), 10000)
-    worker.addEventListener('message', onMessage)
-    worker.addEventListener('error', onError)
-    worker.postMessage({ id, opponentRecord: record, memory, seedBot })
-  })
-}
-
-// Live path: the backend runs the society with real Qwen reasoning (Alibaba
-// Cloud Model Studio) when DASHSCOPE_API_KEY is set server-side (otherwise the backend itself uses the
-// deterministic agent). If the backend is unreachable, fall back to the
-// in-browser deterministic society so the UI never breaks.
+// Live path ONLY. The backend runs the five-specialist society with real Qwen
+// reasoning (Alibaba Cloud Model Studio). There is deliberately NO in-browser
+// deterministic fallback: a design that looks like Qwen but was computed by a
+// local heuristic is worse than an honest failure, so an unreachable or keyless
+// backend surfaces as an error the studio shows — never a silent lookalike.
 //
 // `seedBot` is the build the search starts from — normally whatever the user has
 // open in the lab, so the result is a set of changes to THEIR bot.
 export async function designViaBackend(record, memory, seedBot) {
+  let res
   try {
-    const res = await fetch(`${API_BASE}/design`, {
+    res = await fetch(`${API_BASE}/design`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ opponentName: record.name, opponentRecord: record, memory, seedBot }),
     })
-    if (!res.ok) throw new Error(`design ${res.status}`)
-    const body = await res.json()
-    // A 200 is not a promise that the body is a design. Proxies, captive
-    // portals, and version skew all produce well-formed responses the studio
-    // would then render straight into a crash, so check before trusting it.
-    if (!isDesign(body)) throw new Error('design response missing required fields')
-    return { ...body, source: 'backend' }
   } catch {
-    return { ...(await designVsOpponent(record, memory, seedBot)), source: 'local-fallback' }
+    throw new Error(`Cannot reach the Agent Society backend at ${API_BASE}. Start it with \`npm run api\`.`)
   }
+
+  if (!res.ok) {
+    // Surface the backend's own message verbatim: 503 (no DASHSCOPE_API_KEY) and
+    // 502 (Qwen upstream error) both carry an actionable `error` string.
+    let detail = `Agent Society backend error (${res.status}).`
+    try {
+      const body = await res.json()
+      if (body?.error) detail = body.error
+    } catch { /* non-JSON error body — keep the status-code message */ }
+    throw new Error(detail)
+  }
+
+  const body = await res.json()
+  // A 200 is not a promise that the body is a design. Proxies, captive portals
+  // and version skew all return well-formed responses the studio would otherwise
+  // dereference straight into a crash, so validate before trusting it.
+  if (!isDesign(body)) throw new Error('The backend returned a malformed design response.')
+  return { ...body, source: 'backend' }
 }
 
 // The fields the studio dereferences without guarding.

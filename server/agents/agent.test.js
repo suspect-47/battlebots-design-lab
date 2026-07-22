@@ -55,10 +55,12 @@ describe('makeQwenAgent', () => {
     expect(await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)).toBeNull()
   })
 
-  it('falls back to the measured proposal on a non-2xx response', async () => {
+  it('propagates a non-2xx upstream response as an error (no silent fallback)', async () => {
+    // Availability failure: the model is erroring. Production stance is to surface
+    // it (route → 502), never to serve a deterministic proposal dressed as Qwen.
     const fetchImpl = async () => ({ ok: false, status: 500, text: async () => 'err' })
-    const p = await makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent)
-    expect(p.edit.type).toBe('setArmor')
+    await expect(makeQwenAgent({ apiKey: 'sk-test', fetchImpl }).propose('armor', ctx(bot), opponent))
+      .rejects.toThrow(/dashscope 500/)
   })
 
   it('falls back to the measured proposal on malformed JSON (never throws)', async () => {

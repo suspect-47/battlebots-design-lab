@@ -52,22 +52,27 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab, lab
   const [opponentName, setOpponentName] = useState(roster[0]?.name || '')
   const [result, setResult] = useState(null)
   const [running, setRunning] = useState(false)
+  const [error, setError] = useState(null)
   const opponent = roster.find((b) => b.name === opponentName) || roster[0]
 
   async function run() {
     const record = opponent
     setRunning(true)
     setResult(null)
+    setError(null)
     try {
       // let the "negotiating" frame paint before the society runs
       await new Promise((r) => setTimeout(r, 30))
-      // always run the best available brain: real Qwen via backend when keyed, falls back to in-browser deterministic
-      // Always start from the build the user has open: the answer is "what do I
-      // change about MY bot", and the server falls back to a neutral seed on its
-      // own if that build cannot be read.
+      // Live Qwen only — no deterministic fallback. If the backend is down or
+      // keyless, designViaBackend throws and we surface it rather than serving a
+      // lookalike result. Always start from the build the user has open: the
+      // answer is "what do I change about MY bot" (the server falls back to a
+      // neutral seed on its own if that build cannot be read).
       const out = await designViaBackend(record, memory, labBot)
       setResult(out)
       onRemember?.(out)
+    } catch (err) {
+      setError(err?.message || 'The Agent Society run failed.')
     } finally {
       setRunning(false)
     }
@@ -88,8 +93,10 @@ export default function AgentDesignView({ memory, onRemember, onLoadIntoLab, lab
             ) : 'Run Agent Society ▸'}
           </button>
           <OpponentPreview opponent={opponent} />
-          {result?.source === 'local-fallback' && (
-            <div className="chip" style={{ color: 'var(--amber)', borderColor: 'rgba(255,171,18,0.3)' }}>offline heuristic</div>
+          {error && (
+            <div className="chip" style={{ color: 'var(--red)', borderColor: 'rgba(255,77,77,0.35)', display: 'block', whiteSpace: 'normal', lineHeight: 1.4, padding: '8px 10px' }}>
+              {error}
+            </div>
           )}
           {result?.source === 'backend' && (
             <div className="chip chip-dot" style={{ '--accent': 'var(--lime)', color: 'var(--lime)' }}>Qwen reasoning</div>

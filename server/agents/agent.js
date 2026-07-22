@@ -35,27 +35,38 @@ export function makeQwenAgent({ apiKey, baseUrl, model, fetchImpl = fetch }) {
   return {
     async propose(role, ctx, opponentBot) {
       const searched = proposeFor(role, ctx, opponentBot)
+      const { evaluated, shortlist } = evaluateAxis(role, ctx, opponentBot)
+
+      // The upstream call. A failure here (network, non-2xx, empty completion)
+      // is an AVAILABILITY problem — the model is unreachable, rate-limited, or
+      // erroring — not a guardrail case. Let it throw so /design surfaces 502
+      // instead of quietly serving a deterministic proposal dressed up as Qwen.
+      const content = await qwenChat({
+        apiKey,
+        baseUrl,
+        model,
+        fetchImpl,
+        json: true,
+        messages: [
+          { role: 'system', content: `${SYSTEM}\nYour discipline: ${role}.` },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              bot: ctx.bot,
+              scout: ctx.scout,
+              weightLb: ctx.derived.totalWeightLb,
+              measuredOptions: shortlist.map((c) => ({ label: c.label, margin: c.score.margin, weightLb: c.score.weightLb })),
+            }),
+          },
+        ],
+      })
+
+      // Past the upstream call, every remaining failure is Qwen's OUTPUT being
+      // unusable — unparseable JSON, an off-axis or no-op edit, or one that makes
+      // an invalid bot. Those ARE guardrails: fall back to the best measured
+      // on-axis option so the build stays legal. This bounds-checks one proposal;
+      // it does not substitute a different brain for an unreachable model.
       try {
-        const { evaluated, shortlist } = evaluateAxis(role, ctx, opponentBot)
-        const content = await qwenChat({
-          apiKey,
-          baseUrl,
-          model,
-          fetchImpl,
-          json: true,
-          messages: [
-            { role: 'system', content: `${SYSTEM}\nYour discipline: ${role}.` },
-            {
-              role: 'user',
-              content: JSON.stringify({
-                bot: ctx.bot,
-                scout: ctx.scout,
-                weightLb: ctx.derived.totalWeightLb,
-                measuredOptions: shortlist.map((c) => ({ label: c.label, margin: c.score.margin, weightLb: c.score.weightLb })),
-              }),
-            },
-          ],
-        })
         const parsed = JSON.parse(content)
         if (!parsed.edit) return null
 
@@ -87,7 +98,8 @@ export function makeQwenAgent({ apiKey, baseUrl, model, fetchImpl = fetch }) {
           })),
         }
       } catch {
-        // never break the negotiation — fall back to the measured proposal
+        // unparseable model output — a guardrail, not an availability failure:
+        // use the measured on-axis proposal so the build stays valid.
         return searched
       }
     },

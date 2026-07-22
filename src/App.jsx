@@ -41,20 +41,21 @@ function GlassPanel({ children, frosted = true, scroll = false }) {
       className="relative h-full w-full rounded-[20px] overflow-hidden"
       style={{
         ...(frosted && {
-          background: 'linear-gradient(180deg, var(--surface-2), var(--surface))',
-          backdropFilter: 'blur(20px) saturate(165%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(165%)',
+          background: 'var(--glass-fill), linear-gradient(180deg, var(--surface-2), var(--surface))',
+          backdropFilter: 'var(--glass-filter)',
+          WebkitBackdropFilter: 'var(--glass-filter)',
         }),
         boxShadow: '0 28px 70px -24px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)',
       }}
     >
       <div className={scroll ? 'h-full w-full overflow-y-auto' : 'h-full w-full'}>{children}</div>
-      {/* liquid-glass rim: specular top edge + top-left gloss + inner floor shade */}
+      {/* liquid-glass rim: specular top edge + top-left gloss + inner floor shade —
+          same tokens as the CSS .panel surfaces so every glass reads identically */}
       <div
         className="pointer-events-none absolute inset-0 z-20 rounded-[20px]"
         style={{
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -40px 70px -46px rgba(0,0,0,0.7)',
-          background: 'radial-gradient(120% 80% at 15% -6%, rgba(255,255,255,0.08), transparent 55%)',
+          boxShadow: 'inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -40px 70px -46px rgba(0,0,0,0.7)',
+          background: 'var(--glass-sheen)',
         }}
       />
     </div>
@@ -150,10 +151,10 @@ export default function App() {
         <div
           className="app-header px-6 h-[62px] rounded-2xl"
           style={{
-            background: 'linear-gradient(180deg, var(--surface-2), var(--surface))',
-            backdropFilter: 'blur(20px) saturate(165%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(165%)',
-            boxShadow: '0 20px 50px -24px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.14)',
+            background: 'var(--glass-fill), linear-gradient(180deg, var(--surface-2), var(--surface))',
+            backdropFilter: 'var(--glass-filter)',
+            WebkitBackdropFilter: 'var(--glass-filter)',
+            boxShadow: '0 20px 50px -24px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 var(--glass-edge)',
           }}
         >
           {/* wordmark */}

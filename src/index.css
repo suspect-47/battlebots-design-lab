@@ -19,13 +19,13 @@
 
 :root {
   /* surfaces */
-  --bg: #070914;
-  --bg-2: #0b0e1d;
-  --elev: #11152a;
-  --surface: rgba(19, 24, 46, 0.72);
-  --surface-2: rgba(31, 37, 68, 0.78);
-  --line: rgba(150, 170, 200, 0.14);
-  --line-strong: rgba(150, 170, 200, 0.26);
+  --bg: #0f1428;
+  --bg-2: #141a33;
+  --elev: #1b2242;
+  --surface: rgba(30, 38, 66, 0.72);
+  --surface-2: rgba(44, 54, 90, 0.78);
+  --line: rgba(160, 180, 210, 0.18);
+  --line-strong: rgba(160, 180, 210, 0.32);
 
   /* ink */
   --ink: #eaf0f6;
@@ -49,6 +49,15 @@
   --shadow-lift: 0 18px 50px -20px rgba(0, 0, 0, 0.9);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Liquid-glass recipe — ONE source of truth for every frosted surface, so the
+     whole app refracts, brightens and rims the same way. Tune here, not per class. */
+  --glass-filter: blur(24px) saturate(180%) brightness(1.08);
+  --glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018));
+  --glass-hair: rgba(255, 255, 255, 0.10);   /* hairline border */
+  --glass-edge: rgba(255, 255, 255, 0.22);   /* bright specular top rim */
+  --glass-sheen: radial-gradient(130% 85% at 15% -10%, rgba(255, 255, 255, 0.16), transparent 48%),
+                 linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 26%);
 }
 
 /* One spacing scale for stacked readouts, so a label/value pair is the same
@@ -70,6 +79,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui);
+  font-weight: 500;
   /* cv05: single-storey l with a tail — keeps 1/l/I apart in bot names and specs */
   font-feature-settings: 'cv05' 1, 'tnum' 0;
   font-size: 14px;
@@ -79,11 +89,11 @@ body {
   text-rendering: optimizeLegibility;
   /* layered atmosphere: a playful pit-lane glow over a quiet grid */
   background-image:
-    radial-gradient(85% 60% at 48% -8%, rgba(255, 171, 18, 0.12), transparent 60%),
-    radial-gradient(70% 62% at 100% 30%, rgba(255, 46, 110, 0.12), transparent 62%),
-    radial-gradient(70% 70% at 0% 85%, rgba(31, 227, 232, 0.1), transparent 62%),
-    linear-gradient(rgba(150, 170, 200, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(150, 170, 200, 0.028) 1px, transparent 1px);
+    radial-gradient(85% 60% at 48% -8%, rgba(255, 171, 18, 0.17), transparent 60%),
+    radial-gradient(70% 62% at 100% 30%, rgba(255, 46, 110, 0.17), transparent 62%),
+    radial-gradient(70% 70% at 0% 85%, rgba(31, 227, 232, 0.15), transparent 62%),
+    linear-gradient(rgba(160, 180, 210, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160, 180, 210, 0.04) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 100% 100%, 44px 44px, 44px 44px;
   background-attachment: fixed;
 }
@@ -95,7 +105,7 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 60;
-  opacity: 0.22;
+  opacity: 0.12;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
 }
@@ -105,11 +115,11 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 55;
-  box-shadow: inset 0 0 180px 24px rgba(0, 0, 0, 0.56);
+  box-shadow: inset 0 0 150px 16px rgba(0, 0, 0, 0.30);
 }
 
 .workspace-note { color: var(--ink-3); font-size: 11px; line-height: 1.45; }
-.section-label { color: var(--ink-3); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+.section-label { color: var(--ink-3); font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
 
 /* ---------- shell ---------- */
 /* auto | 1fr | auto — the brand and the action cluster take exactly the width
@@ -198,7 +208,7 @@ body {
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -234,21 +244,20 @@ body {
 .panel,
 .hud-panel {
   position: relative;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012)),
-    linear-gradient(180deg, var(--surface-2), var(--surface));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px) saturate(165%);
-  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  border-radius: 20px;
+  background: var(--glass-fill), linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--glass-hair);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 22%, transparent),
-    0 0 26px -10px color-mix(in srgb, var(--accent, var(--cyan)) 60%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -24px 46px -34px rgba(0, 0, 0, 0.65),
+    0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 20%, transparent),
+    0 0 30px -12px color-mix(in srgb, var(--accent, var(--cyan)) 55%, transparent),
+    inset 0 1px 0 var(--glass-edge),                /* specular top rim */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),      /* faint glass wall */
+    inset 0 -30px 60px -40px rgba(0, 0, 0, 0.7),    /* refraction floor shade */
     var(--shadow-lift);
 }
-/* liquid specular highlight sweeping the top-left */
+/* liquid specular sheen sweeping the top-left */
 .panel::before,
 .hud-panel::before {
   content: '';
@@ -257,7 +266,7 @@ body {
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(130% 90% at 12% -8%, rgba(255, 255, 255, 0.1), transparent 52%);
+  background: var(--glass-sheen);
 }
 .panel > *,
 .hud-panel > * {
@@ -266,50 +275,67 @@ body {
 }
 /* rounded corners (kept as a modifier for intent; no longer a sharp clip) */
 .panel-clip {
-  border-radius: 18px;
+  border-radius: 20px;
 }
 
 /* ---------- small liquid-glass cards ---------- */
 .glass-card {
   position: relative;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(10px) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border-radius: 16px;
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-hair);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -20px 40px -32px rgba(0, 0, 0, 0.55),
     0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 14%, transparent);
   transition: box-shadow 0.22s var(--ease-out), transform 0.15s var(--ease-out), border-color 0.2s;
+}
+/* the same top-left gloss as the big panels, so every glass surface reads alike */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--glass-sheen);
+}
+/* keep card content above its own sheen layer */
+.glass-card > * {
+  position: relative;
+  z-index: 1;
 }
 .glass-card:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent, var(--cyan)) 38%, transparent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 var(--glass-edge),
     0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 30%, transparent),
-    0 0 20px -8px color-mix(in srgb, var(--accent, var(--cyan)) 62%, transparent);
+    0 0 24px -8px color-mix(in srgb, var(--accent, var(--cyan)) 62%, transparent);
 }
 /* static full-height glass panes (no hover lift) */
 .glass-card.glass-pane:hover {
   transform: none;
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--glass-hair);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -20px 40px -32px rgba(0, 0, 0, 0.55),
     0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 14%, transparent);
 }
 
 /* glass card with a neon left accent bar */
 .glass-bar {
   position: relative;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(10px) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border-radius: 14px;
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-hair);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   box-shadow:
     inset 3px 0 0 var(--accent, var(--cyan)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    inset 0 1px 0 var(--glass-edge),
     0 0 0 1px color-mix(in srgb, var(--accent, var(--cyan)) 15%, transparent),
     0 0 18px -10px color-mix(in srgb, var(--accent, var(--cyan)) 55%, transparent);
 }
@@ -322,7 +348,7 @@ body {
   justify-content: center;
   gap: 8px;
   font-family: var(--font-ui);
-  font-weight: 800;
+  font-weight: 900;
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
