@@ -14,7 +14,8 @@
     "enrich": "node scripts/enrich.mjs",
     "cartoonize": "node scripts/cartoonize.mjs",
     "api": "node server/api/server.js",
-    "qwen:smoke": "node scripts/qwenSmoke.mjs"
+    "qwen:smoke": "node scripts/qwenSmoke.mjs",
+    "sim:check": "node scripts/arenaSimCheck.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

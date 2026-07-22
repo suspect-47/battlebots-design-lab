@@ -26,6 +26,27 @@ describe('opponentDrive', () => {
     expect(behind.throttle).toBeLessThan(facing.throttle)
   })
 
+  it('keeps advancing even when facing away — never stalls into a circle', () => {
+    // target directly behind, but still far: throttle is reduced, not zero
+    const behind = opponentDrive({ selfPos: [0, 0], selfYaw: 0, targetPos: [-5, 0], aggression: 1 })
+    expect(behind.throttle).toBeGreaterThan(0.2)
+  })
+
+  it('locks heading and rams at full throttle when close and aligned', () => {
+    // target close and dead ahead: charge straight through (steer 0) so it collides
+    // and overshoots instead of curving around into an orbit
+    const close = opponentDrive({ selfPos: [0, 0], selfYaw: 0, targetPos: [0.6, 0], aggression: 1 })
+    expect(close.throttle).toBeCloseTo(1, 5)
+    expect(close.steer).toBe(0)
+  })
+
+  it('turns first (does not blind-commit) when close but not aligned', () => {
+    // target close but 90deg off: aim rather than ram past it
+    const close = opponentDrive({ selfPos: [0, 0], selfYaw: 0, targetPos: [0, 0.6], aggression: 1 })
+    expect(Math.abs(close.steer)).toBeGreaterThan(0.5)
+    expect(close.throttle).toBeLessThan(0.6)
+  })
+
   it('clamps steer to [-1, 1]', () => {
     const r = opponentDrive({ selfPos: [0, 0], selfYaw: 0, targetPos: [-0.01, 5], aggression: 1 })
     expect(r.steer).toBeGreaterThanOrEqual(-1)
